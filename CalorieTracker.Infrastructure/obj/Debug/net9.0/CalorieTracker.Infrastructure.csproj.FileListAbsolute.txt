@@ -17,3 +17,4 @@ C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Infrastructure\obj\De
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Infrastructure\obj\Debug\net9.0\CalorieTracker.Infrastructure.pdb
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Infrastructure\obj\Debug\net9.0\CalorieTracker.Infrastructure.genruntimeconfig.cache
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Infrastructure\obj\Debug\net9.0\ref\CalorieTracker.Infrastructure.dll
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Infrastructure\obj\Debug\net9.0\CalorieTracker.Infrastructure.sourcelink.json

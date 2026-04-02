@@ -12,6 +12,7 @@ namespace CalorieTracker.Infrastructure.Data
         public DbSet<User> Users { get; set; }
         public DbSet<FoodLog> FoodLogs { get; set; }
 
+        public DbSet<UserProfileHistory> UserProfileHistory { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Mapeo Fluent API para Database First

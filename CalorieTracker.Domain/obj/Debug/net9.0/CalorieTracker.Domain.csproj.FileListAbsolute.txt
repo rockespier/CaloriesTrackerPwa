@@ -9,3 +9,4 @@ C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Debug\net9
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Debug\net9.0\refint\CalorieTracker.Domain.dll
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Debug\net9.0\CalorieTracker.Domain.pdb
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Debug\net9.0\ref\CalorieTracker.Domain.dll
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Debug\net9.0\CalorieTracker.Domain.sourcelink.json

@@ -7,13 +7,15 @@ namespace CalorieTracker.Domain.Entities
         public Guid Id { get; private set; }
         public string Email { get; private set; }
         public string PasswordHash { get; private set; }
-        public string Name { get; private set; }
-        public double HeightCm { get; private set; }
-        public double CurrentWeightKg { get; private set; }
-        public double TargetWeightKg { get; private set; }
-        public int Age { get; private set; }
-        public char BiologicalSex { get; private set; } // 'M' o 'F'
-        public ActivityLevel ActivityLevel { get; private set; }
+        public string Name { get; set; }
+        public double HeightCm { get; set; }
+        public double CurrentWeightKg { get; set; }
+        public double TargetWeightKg { get; set; }
+        public int Age { get; set; }
+        public char BiologicalSex { get; set; } // 'M' o 'F'
+        public ActivityLevel ActivityLevel { get; set; }
+        public int DailyCaloricTarget { get; set; }
+        public string Goal { get; set; }
 
         private User() { } // Para EF Core
 

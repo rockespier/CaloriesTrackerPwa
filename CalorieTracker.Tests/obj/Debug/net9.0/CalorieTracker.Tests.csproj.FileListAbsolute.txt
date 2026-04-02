@@ -123,3 +123,4 @@ C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Tests\obj\Debug\net9.
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Tests\obj\Debug\net9.0\CalorieTracker.Tests.pdb
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Tests\obj\Debug\net9.0\CalorieTracker.Tests.genruntimeconfig.cache
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Tests\obj\Debug\net9.0\ref\CalorieTracker.Tests.dll
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Tests\obj\Debug\net9.0\CalorieTracker.Tests.sourcelink.json

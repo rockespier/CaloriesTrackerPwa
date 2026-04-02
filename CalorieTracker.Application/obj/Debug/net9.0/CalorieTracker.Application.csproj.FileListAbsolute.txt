@@ -13,3 +13,4 @@ C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Debug
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Debug\net9.0\refint\CalorieTracker.Application.dll
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Debug\net9.0\CalorieTracker.Application.pdb
 C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Debug\net9.0\ref\CalorieTracker.Application.dll
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Debug\net9.0\CalorieTracker.Application.sourcelink.json

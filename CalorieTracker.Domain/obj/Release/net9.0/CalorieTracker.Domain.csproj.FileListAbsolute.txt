@@ -1,0 +1,12 @@
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\bin\Release\net9.0\CalorieTracker.Domain.deps.json
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\bin\Release\net9.0\CalorieTracker.Domain.dll
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\bin\Release\net9.0\CalorieTracker.Domain.pdb
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Release\net9.0\CalorieTracker.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Release\net9.0\CalorieTracker.Domain.AssemblyInfoInputs.cache
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Release\net9.0\CalorieTracker.Domain.AssemblyInfo.cs
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Release\net9.0\CalorieTracker.Domain.csproj.CoreCompileInputs.cache
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Release\net9.0\CalorieTracker.Domain.sourcelink.json
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Release\net9.0\CalorieTracker.Domain.dll
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Release\net9.0\refint\CalorieTracker.Domain.dll
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Release\net9.0\CalorieTracker.Domain.pdb
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Domain\obj\Release\net9.0\ref\CalorieTracker.Domain.dll

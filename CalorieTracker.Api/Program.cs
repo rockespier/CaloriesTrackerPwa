@@ -3,6 +3,7 @@ using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
 using CalorieTracker.Application.Commands;
 using CalorieTracker.Application.Interfaces;
+using CalorieTracker.Application.Services;
 using CalorieTracker.Application.UseCases;
 using CalorieTracker.Domain.Entities;
 using CalorieTracker.Infrastructure.Auth;
@@ -83,6 +84,8 @@ builder.Services.AddScoped<IFoodLogRepository, FoodLogRepository>();
 builder.Services.AddScoped<INutritionRepository, NutritionRepository>();
 builder.Services.AddScoped<LogFoodUseCase>();
 
+builder.Services.AddScoped<UserService>();
+
 // 4. Configurar Autenticación JWT nativa
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -122,7 +125,7 @@ app.MapGet("/", () => Results.Ok(new
 .WithName("Root")
 .AllowAnonymous();
 
-var nutritionGroup = app.MapGroup("/api/v1/nutrition")
+var nutritionGroup = app.MapGroup("/v1/nutrition")
     .WithTags("Nutrition")
     .RequireAuthorization(); // Requiere JWT válido
 
@@ -153,7 +156,7 @@ nutritionGroup.MapPost("/log", async (HttpContext context, LogFoodRequest reques
 .WithName("LogFood");
 
 // 5. Definición de Endpoints (Minimal API)
-var usersGroup = app.MapGroup("/api/v1/users").WithTags("Users");
+var usersGroup = app.MapGroup("/v1/users").WithTags("Users");
 
 usersGroup.MapPost("/register", async (RegisterUserCommand command, RegisterUserUseCase useCase) =>
 {
@@ -165,7 +168,7 @@ usersGroup.MapPost("/register", async (RegisterUserCommand command, RegisterUser
         var userId = await useCase.ExecuteAsync(command);
 
         // Retornamos 201 Created cumpliendo con los estándares REST
-        return Results.Created($"/api/v1/users/{userId}", new { Id = userId });
+        return Results.Created($"/v1/users/{userId}", new { Id = userId });
     }
     catch (InvalidOperationException ex)
     {
@@ -205,8 +208,41 @@ usersGroup.MapPost("/login", async (LoginCommand command, LoginUseCase useCase) 
 .Produces(StatusCodes.Status401Unauthorized)
 .Produces(StatusCodes.Status500InternalServerError);
 
+// Endpoint: GET /api/v1/users/profile
+usersGroup.MapGet("/profile", async (HttpContext context, CalorieTrackerDbContext db) =>
+{
+    var userId = GetUserIdFromClaims(context); // El helper que ya tenemos
+    var user = await db.Users
+        .Where(u => u.Id == userId)
+        .Select(u => new {
+            u.CurrentWeightKg,
+            u.HeightCm,
+            u.Age,
+            u.BiologicalSex,
+            u.ActivityLevel,
+            u.Goal,
+            u.DailyCaloricTarget
+        })
+        .FirstOrDefaultAsync();
+
+    return user is not null ? Results.Ok(user) : Results.NotFound();
+})
+.RequireAuthorization();
+
+// Endpoint: PUT /api/v1/users/profile
+usersGroup.MapPut("/profile", async (UpdateProfileCommand dto, HttpContext context, UserService userService) =>
+{
+    var userId = GetUserIdFromClaims(context);
+    var success = await userService.UpdateProfileAsync(userId, dto);
+
+    return success
+        ? Results.Ok(new { message = "Perfil actualizado con éxito" })
+        : Results.BadRequest("No se pudo actualizar el perfil");
+})
+.RequireAuthorization();
+
 // Endpoint de prueba seguro
-var dashboardGroup = app.MapGroup("/api/v1/dashboard").WithTags("Dashboard").RequireAuthorization();
+var dashboardGroup = app.MapGroup("/v1/dashboard").WithTags("Dashboard").RequireAuthorization();
 
 dashboardGroup.MapGet("/summary", () =>
 {
@@ -249,6 +285,9 @@ nutritionGroup.MapGet("/stats", async (DateTime startDate, DateTime endDate, Htt
     return Results.Ok(stats);
 })
 .WithName("GetNutritionStats");
+
+
+
 
 // Helper local para extraer el Guid del usuario autenticado
 Guid GetUserIdFromClaims(HttpContext context)

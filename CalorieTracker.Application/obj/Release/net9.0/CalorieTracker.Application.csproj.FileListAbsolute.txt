@@ -1,0 +1,16 @@
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\bin\Release\net9.0\CalorieTracker.Application.deps.json
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\bin\Release\net9.0\CalorieTracker.Application.dll
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\bin\Release\net9.0\CalorieTracker.Application.pdb
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\bin\Release\net9.0\CalorieTracker.Domain.dll
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\bin\Release\net9.0\CalorieTracker.Domain.pdb
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Release\net9.0\CalorieTracker.Application.csproj.AssemblyReference.cache
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Release\net9.0\CalorieTracker.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Release\net9.0\CalorieTracker.Application.AssemblyInfoInputs.cache
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Release\net9.0\CalorieTracker.Application.AssemblyInfo.cs
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Release\net9.0\CalorieTracker.Application.csproj.CoreCompileInputs.cache
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Release\net9.0\CalorieTracker.Application.sourcelink.json
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Release\net9.0\CalorieT.36247A1D.Up2Date
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Release\net9.0\CalorieTracker.Application.dll
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Release\net9.0\refint\CalorieTracker.Application.dll
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Release\net9.0\CalorieTracker.Application.pdb
+C:\Users\RRamos\source\repos\CalorieTracker\CalorieTracker.Application\obj\Release\net9.0\ref\CalorieTracker.Application.dll
