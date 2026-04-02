@@ -7,3 +7,5 @@
 /CalorieTracker.Api/obj
 /CalorieTracker.Api/bin
 *.sql
+/publish-api
+/CalorieTracker.Tests/obj/Release/net9.0
