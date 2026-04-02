@@ -3,3 +3,7 @@
 ################################################################################
 
 /.vs/CalorieTracker
+/CalorieTracker.Api/publish-api
+/CalorieTracker.Api/obj
+/CalorieTracker.Api/bin
+*.sql
