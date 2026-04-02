@@ -1,0 +1,59 @@
+name: CalorieTracker CI Pipeline
+
+# 1. ¿Cuándo se ejecuta esto? Cada vez que hagamos push a la rama main
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  # ==========================================
+  # JOB 1: Backend (.NET 9 Minimal API)
+  # ==========================================
+  build-backend:
+    name: Build .NET API
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore Dependencies
+      run: dotnet restore CalorieTracker.Api/CalorieTracker.Api.csproj
+
+    - name: Build API
+      run: dotnet build CalorieTracker.Api/CalorieTracker.Api.csproj --configuration Release --no-restore
+
+    # Aquí en el futuro agregaremos el paso: dotnet test
+
+  # ==========================================
+  # JOB 2: Frontend (Angular PWA)
+  # ==========================================
+  build-frontend:
+    name: Build Angular Client
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: CalorieTracker.Client/package-lock.json
+
+    - name: Install Dependencies
+      working-directory: ./CalorieTracker.Client
+      run: npm ci
+
+    - name: Build Angular PWA
+      working-directory: ./CalorieTracker.Client
+      run: npm run build --configuration=production
