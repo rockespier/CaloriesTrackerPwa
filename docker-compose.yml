@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # 1. Base de Datos SQL Server
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: calorietracker-db
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=SuperSecretPass123!
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlvolume:/var/opt/mssql
+
+  # 2. Backend .NET 9 API
+  api:
+    build:
+      context: .
+      dockerfile: CalorieTracker.Api/Dockerfile
+    container_name: calorietracker-api
+    depends_on:
+      - sqlserver
+    ports:
+      - "8080:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=CalorieTracker;User Id=sa;Password=SuperSecretPass123!;TrustServerCertificate=True;
+      - JwtSettings__Secret=${JWT_SECRET:-FirmaSeguraParaDesarrolloLocalMuyLarga123!}
+      - Gemini__ApiKey=${GEMINI_API_KEY}
+
+  # 3. Frontend Angular PWA
+  frontend:
+    build:
+      context: ./CalorieTracker.Client
+      dockerfile: Dockerfile
+    container_name: calorietracker-frontend
+    depends_on:
+      - api
+    ports:
+      - "80:80" # Expone la aplicación en el puerto 80 del host
+
+volumes:
+  sqlvolume:
