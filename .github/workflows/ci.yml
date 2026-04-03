@@ -46,7 +46,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20'
+        node-version: '22'
 
     - name: Install Dependencies
       working-directory: ./Angular/CalorieTracker.Client
@@ -54,4 +54,4 @@ jobs:
 
     - name: Build Angular PWA
       working-directory: ./Angular/CalorieTracker.Client
-      run: npm run build --configuration=production
+      run: npm run build -- --configuration=production
