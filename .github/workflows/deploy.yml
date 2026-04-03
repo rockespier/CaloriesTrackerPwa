@@ -1,0 +1,201 @@
+name: CalorieTracker Deploy (Manual)
+
+# ============================================================
+# REQUISITOS DEL RUNNER SELF-HOSTED (Windows)
+# ------------------------------------------------------------
+# 1. El runner debe estar instalado y registrado en este repo.
+#    Guía oficial: https://docs.github.com/en/actions/hosting-your-own-runners
+# 2. PowerShell 5.1+ disponible (incluido en Windows Server 2016+).
+#    Expand-Archive es un cmdlet nativo de PowerShell, no requiere herramientas extra.
+# 3. El usuario del servicio del runner debe tener permisos de ESCRITURA
+#    en las rutas destino del backend y del frontend.
+# 4. Si se reinicia IIS, el usuario también necesita permiso para ejecutar
+#    comandos de administración de IIS (Restart-WebAppPool, Stop/Start-WebSite)
+#    o ser administrador local.
+#
+# SECRETS / VARIABLES RECOMENDADOS (GitHub → Settings → Secrets and variables)
+# ------------------------------------------------------------
+# No se requieren secrets obligatorios para este workflow básico,
+# ya que las rutas y nombres se pasan como inputs en cada ejecución.
+# Sin embargo, si tus rutas contienen información sensible (ej. credenciales
+# de red o paths UNC), guárdalas como Repository Secrets:
+#   - BACKEND_TARGET_PATH  → ruta destino del backend (ej. C:\inetpub\CalorieTrackerApi)
+#   - FRONTEND_TARGET_PATH → ruta destino del frontend (ej. C:\inetpub\wwwroot\calorietracker)
+#   - IIS_SITE_NAME        → nombre del sitio IIS (ej. CalorieTrackerSite)
+#   - IIS_APP_POOL_NAME    → nombre del Application Pool de IIS (ej. CalorieTrackerPool)
+# ============================================================
+
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: 'ID del workflow run de CI del que descargar los artefactos (ver pestaña Actions → CI pipeline → Run ID en la URL)'
+        required: true
+        type: string
+      backend_target_path:
+        description: 'Ruta destino del backend en el servidor (ej. C:\inetpub\CalorieTrackerApi)'
+        required: true
+        type: string
+      frontend_target_path:
+        description: 'Ruta destino del frontend en el servidor (ej. C:\inetpub\wwwroot\calorietracker)'
+        required: true
+        type: string
+      restart_iis:
+        description: '¿Reiniciar el sitio y app pool de IIS tras el despliegue?'
+        required: false
+        type: boolean
+        default: false
+      iis_site_name:
+        description: 'Nombre del sitio IIS a detener/iniciar (requerido si restart_iis = true)'
+        required: false
+        type: string
+        default: ''
+      iis_app_pool_name:
+        description: 'Nombre del Application Pool de IIS a reciclar (requerido si restart_iis = true)'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  deploy:
+    name: Deploy to Windows Server
+    # El runner self-hosted debe estar instalado en el servidor destino
+    # con las etiquetas: self-hosted, Windows
+    runs-on: [self-hosted, Windows]
+    permissions:
+      actions: read
+
+    steps:
+    # ----------------------------------------------------------
+    # 1. Descargar artefactos generados por el CI
+    #    Se usa run-id para descargar de un workflow run específico.
+    #    El GITHUB_TOKEN necesita permiso actions:read (declarado arriba).
+    # ----------------------------------------------------------
+    - name: Download Backend Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: backend-release
+        path: ${{ runner.temp }}\artifacts\backend
+        run-id: ${{ inputs.ci_run_id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Download Frontend Artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-release
+        path: ${{ runner.temp }}\artifacts\frontend
+        run-id: ${{ inputs.ci_run_id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    # ----------------------------------------------------------
+    # 2. Desplegar Backend
+    # ----------------------------------------------------------
+    - name: Stop IIS Site before backend deploy (optional)
+      if: ${{ inputs.restart_iis && inputs.iis_site_name != '' }}
+      shell: powershell
+      run: |
+        # Detiene el sitio IIS para liberar los archivos antes de copiarlos.
+        # Requiere que el usuario del runner tenga permisos de administración IIS.
+        # Si el módulo WebAdministration no está disponible, instala la característica:
+        #   Install-WindowsFeature -Name Web-Scripting-Tools -IncludeManagementTools
+        try {
+          Import-Module WebAdministration -ErrorAction Stop
+        } catch {
+          Write-Error "No se pudo cargar el módulo WebAdministration. Verifica que las herramientas de administración de IIS estén instaladas."
+          exit 1
+        }
+        $site = "${{ inputs.iis_site_name }}"
+        if ((Get-WebsiteState -Name $site).Value -eq 'Started') {
+          Stop-Website -Name $site
+          Write-Host "Sitio '$site' detenido."
+        } else {
+          Write-Host "Sitio '$site' ya estaba detenido."
+        }
+
+    - name: Deploy Backend Files
+      shell: powershell
+      run: |
+        $backendZip  = "${{ runner.temp }}\artifacts\backend\backend.zip"
+        $targetPath  = "${{ inputs.backend_target_path }}"
+
+        # Crear carpeta destino si no existe
+        if (-not (Test-Path $targetPath)) {
+          New-Item -ItemType Directory -Path $targetPath -Force | Out-Null
+          Write-Host "Carpeta creada: $targetPath"
+        }
+
+        # Extraer el zip, sobreescribiendo archivos existentes
+        Write-Host "Extrayendo backend en: $targetPath"
+        Expand-Archive -Path $backendZip -DestinationPath $targetPath -Force
+        Write-Host "Backend desplegado correctamente."
+
+    # ----------------------------------------------------------
+    # 3. Desplegar Frontend
+    # ----------------------------------------------------------
+    - name: Deploy Frontend Files
+      shell: powershell
+      run: |
+        $frontendZip = "${{ runner.temp }}\artifacts\frontend\frontend.zip"
+        $targetPath  = "${{ inputs.frontend_target_path }}"
+
+        # Crear carpeta destino si no existe
+        if (-not (Test-Path $targetPath)) {
+          New-Item -ItemType Directory -Path $targetPath -Force | Out-Null
+          Write-Host "Carpeta creada: $targetPath"
+        }
+
+        # Extraer el zip, sobreescribiendo archivos existentes
+        Write-Host "Extrayendo frontend en: $targetPath"
+        Expand-Archive -Path $frontendZip -DestinationPath $targetPath -Force
+        Write-Host "Frontend desplegado correctamente."
+
+    # ----------------------------------------------------------
+    # 4. Reiniciar IIS (opcional, solo si restart_iis = true)
+    # ----------------------------------------------------------
+    - name: Recycle IIS Application Pool
+      if: ${{ inputs.restart_iis && inputs.iis_app_pool_name != '' }}
+      shell: powershell
+      run: |
+        # Recicla el Application Pool para que IIS cargue los nuevos binarios.
+        try {
+          Import-Module WebAdministration -ErrorAction Stop
+        } catch {
+          Write-Error "No se pudo cargar el módulo WebAdministration. Verifica que las herramientas de administración de IIS estén instaladas."
+          exit 1
+        }
+        $pool = "${{ inputs.iis_app_pool_name }}"
+        Write-Host "Reciclando Application Pool: $pool"
+        Restart-WebAppPool -Name $pool
+        Write-Host "Application Pool '$pool' reciclado."
+
+    - name: Start IIS Site after deploy
+      if: ${{ inputs.restart_iis && inputs.iis_site_name != '' }}
+      shell: powershell
+      run: |
+        try {
+          Import-Module WebAdministration -ErrorAction Stop
+        } catch {
+          Write-Error "No se pudo cargar el módulo WebAdministration. Verifica que las herramientas de administración de IIS estén instaladas."
+          exit 1
+        }
+        $site = "${{ inputs.iis_site_name }}"
+        Start-Website -Name $site
+        Write-Host "Sitio '$site' iniciado."
+
+    # ----------------------------------------------------------
+    # 5. Resumen del despliegue
+    # ----------------------------------------------------------
+    - name: Deployment Summary
+      shell: powershell
+      run: |
+        Write-Host "============================================"
+        Write-Host " CalorieTracker - Despliegue completado"
+        Write-Host "============================================"
+        Write-Host " CI Run ID: ${{ inputs.ci_run_id }}"
+        Write-Host " Backend  → ${{ inputs.backend_target_path }}"
+        Write-Host " Frontend → ${{ inputs.frontend_target_path }}"
+        if ('${{ inputs.restart_iis }}' -eq 'true') {
+          Write-Host " IIS Site : ${{ inputs.iis_site_name }}"
+          Write-Host " App Pool : ${{ inputs.iis_app_pool_name }}"
+        }
+        Write-Host "============================================"
