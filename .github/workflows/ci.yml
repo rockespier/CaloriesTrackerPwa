@@ -1,6 +1,7 @@
 name: CalorieTracker CI Pipeline
 
-# 1. ¿Cuándo se ejecuta esto? Cada vez que hagamos push a la rama main
+# Se ejecuta en cada push/PR a main y genera artefactos desplegables
+# para ser consumidos por el workflow deploy.yml.
 on:
   push:
     branches: [ "main" ]
@@ -12,8 +13,10 @@ jobs:
   # JOB 1: Backend (.NET 9 Minimal API)
   # ==========================================
   build-backend:
-    name: Build .NET API
+    name: Build, Test & Publish .NET API
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
     - name: Checkout Code
@@ -30,14 +33,37 @@ jobs:
     - name: Build API
       run: dotnet build CalorieTracker.Api/CalorieTracker.Api.csproj --configuration Release --no-restore
 
-    # Aquí en el futuro agregaremos el paso: dotnet test
+    # Ejecuta los tests del proyecto CalorieTracker.Tests (xUnit + Moq)
+    - name: Run Backend Tests
+      run: dotnet test CalorieTracker.Tests/CalorieTracker.Tests.csproj --configuration Release --verbosity normal
+
+    # Genera la salida desplegable en ./publish/backend
+    - name: Publish API (Release)
+      run: >
+        dotnet publish CalorieTracker.Api/CalorieTracker.Api.csproj
+        --configuration Release
+        --output ./publish/backend
+        --no-build
+
+    # Empaqueta el resultado en un zip para subirlo como artefacto
+    - name: Zip Backend Artifact
+      run: zip -r backend.zip ./publish/backend
+
+    - name: Upload Backend Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-release
+        path: backend.zip
+        retention-days: 7
 
   # ==========================================
   # JOB 2: Frontend (Angular PWA)
   # ==========================================
   build-frontend:
-    name: Build Angular Client
+    name: Build & Package Angular Client
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
     - name: Checkout Code
@@ -52,6 +78,18 @@ jobs:
       working-directory: ./Angular/CalorieTracker.Client
       run: npm ci
 
-    - name: Build Angular PWA
+    - name: Build Angular PWA (Production)
       working-directory: ./Angular/CalorieTracker.Client
       run: npm run build -- --configuration=production
+
+    # Empaqueta el directorio dist/ en un zip para subirlo como artefacto
+    - name: Zip Frontend Artifact
+      working-directory: ./Angular/CalorieTracker.Client
+      run: zip -r ../../../frontend.zip dist/
+
+    - name: Upload Frontend Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: frontend-release
+        path: frontend.zip
+        retention-days: 7
