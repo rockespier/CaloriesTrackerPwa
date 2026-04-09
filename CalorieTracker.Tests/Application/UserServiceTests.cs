@@ -74,7 +74,7 @@ namespace CalorieTracker.Tests.Application
         {
             // Arrange
             var userId = Guid.NewGuid();
-            // Male, 80kg, 175cm, 30y, Sedentary => BMR ≈ 1806.5, TDEE ≈ 2167.8
+            // Male, 80kg, 175cm, 30y, Sedentary
             var user = new User("test@test.com", "hash", "Test", 175, 80, 75, 30, 'M', ActivityLevel.Sedentary);
             var command = new UpdateProfileCommand(80, 175, 30, 'M', ActivityLevel.Sedentary, goal);
 
@@ -86,7 +86,7 @@ namespace CalorieTracker.Tests.Application
             await _userService.UpdateProfileAsync(userId, command);
 
             // Assert: DailyCaloricTarget should be TDEE + offset
-            // BMR(Mifflin) = 10*80 + 6.25*175 - 5*30 + 5 = 800 + 1093.75 - 150 + 5 = 1748.75
+            // BMR(Mifflin-St Jeor simplified) = 10*80 + 6.25*175 - 5*30 + 5 = 1748.75
             // TDEE = 1748.75 * 1.2 = 2098.5
             int expectedTarget = (int)(2098.5 + expectedOffset);
             Assert.Equal(expectedTarget, user.DailyCaloricTarget);
