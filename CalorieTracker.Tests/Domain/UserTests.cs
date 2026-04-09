@@ -25,10 +25,10 @@ namespace CalorieTracker.Tests.Domain
             var caloricTarget = user.CalculateDailyCaloricTarget();
 
             // Assert
-            // BMR = 88.362 + (13.397 * 90) + (4.799 * 180) - (5.677 * 30) = 1987.602
-            // TDEE = 1987.602 * 1.2 = 2385.1224
-            // Deficit = 2385.1224 - 500 = 1885.1224
-            Assert.InRange(caloricTarget, 1885.0, 1885.3);
+            // Mifflin-St Jeor: BMR = (10 * 90) + (6.25 * 180) - (5 * 30) + 5 = 1880
+            // TDEE = 1880 * 1.2 = 2256
+            // Deficit = 2256 - 500 = 1756
+            Assert.InRange(caloricTarget, 1755.9, 1756.1);
         }
     }
 }

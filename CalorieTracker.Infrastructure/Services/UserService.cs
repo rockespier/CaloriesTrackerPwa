@@ -1,4 +1,5 @@
 ﻿using CalorieTracker.Domain.Entities;
+using CalorieTracker.Domain.Services;
 using CalorieTracker.Infrastructure.Data;
 using CalorieTracker.Application.Commands;
 using Microsoft.EntityFrameworkCore;
@@ -40,31 +41,11 @@ namespace CalorieTracker.Application.Services
             return await context.SaveChangesAsync() > 0;
         }
 
-        private int CalculateTarget(User user)
+        private static int CalculateTarget(User user)
         {
-            // Fórmula Mifflin-St Jeor simplificada
-            double bmr = (10 * user.CurrentWeightKg) + (6.25 * user.HeightCm) - (5 * user.Age);
-            bmr = (user.BiologicalSex == 'M') ? bmr + 5 : bmr - 161;
-
-            double factor = user.ActivityLevel switch
-            {
-                ActivityLevel.Sedentary => 1.2,
-                ActivityLevel.LightlyActive => 1.375,
-                ActivityLevel.ModeratelyActive => 1.55,
-                ActivityLevel.VeryActive => 1.725,
-                ActivityLevel.ExtraActive => 1.9,
-                _ => 1.2
-            };
-
-            double tdee = bmr * factor;
-
-            // Ajuste según objetivo
-            return user.Goal switch
-            {
-                "Perder" => (int)(tdee - 500),
-                "Ganar" => (int)(tdee + 300),
-                _ => (int)tdee
-            };
+            double bmr = CaloricCalculatorService.CalculateBMR(user.CurrentWeightKg, user.HeightCm, user.Age, user.BiologicalSex);
+            double tdee = CaloricCalculatorService.CalculateTDEE(bmr, user.ActivityLevel);
+            return (int)CaloricCalculatorService.CalculateDailyTarget(tdee, user.Goal);
         }
     }
 }

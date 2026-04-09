@@ -1,4 +1,5 @@
 ﻿using System;
+using CalorieTracker.Domain.Services;
 
 namespace CalorieTracker.Domain.Entities
 {
@@ -36,36 +37,16 @@ namespace CalorieTracker.Domain.Entities
 
         public double CalculateDailyCaloricTarget()
         {
-            double bmr = BiologicalSex == 'M'
-                ? 88.362 + (13.397 * CurrentWeightKg) + (4.799 * HeightCm) - (5.677 * Age)
-                : 447.593 + (9.247 * CurrentWeightKg) + (3.098 * HeightCm) - (4.330 * Age);
+            double bmr = CaloricCalculatorService.CalculateBMR(CurrentWeightKg, HeightCm, Age, BiologicalSex);
+            double tdee = CaloricCalculatorService.CalculateTDEE(bmr, ActivityLevel);
 
-            double tdee = bmr * GetActivityMultiplier();
+            // Derive goal from weight targets when the Goal string property is not set.
+            string? effectiveGoal = Goal
+                ?? (TargetWeightKg < CurrentWeightKg ? CaloricCalculatorService.GoalLose
+                    : TargetWeightKg > CurrentWeightKg ? CaloricCalculatorService.GoalGain
+                    : null);
 
-            // Lógica simple de déficit: Si el peso objetivo es menor, reducimos 500 kcal para un déficit saludable (aprox 0.5kg por semana).
-            if (TargetWeightKg < CurrentWeightKg)
-            {
-                return tdee - 500;
-            }
-            if (TargetWeightKg > CurrentWeightKg)
-            {
-                return tdee + 500;
-            }
-
-            return tdee; // Mantenimiento
-        }
-
-        private double GetActivityMultiplier()
-        {
-            return ActivityLevel switch
-            {
-                ActivityLevel.Sedentary => 1.2,
-                ActivityLevel.LightlyActive => 1.375,
-                ActivityLevel.ModeratelyActive => 1.55,
-                ActivityLevel.VeryActive => 1.725,
-                ActivityLevel.ExtraActive => 1.9,
-                _ => 1.2
-            };
+            return CaloricCalculatorService.CalculateDailyTarget(tdee, effectiveGoal);
         }
     }
 
