@@ -22,9 +22,13 @@ namespace CalorieTracker.Infrastructure.Auth
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var secretKey = jwtSettings["Secret"] ?? throw new InvalidOperationException("JWT Secret is missing");
+
+            if (secretKey.Length < 32)
+                throw new InvalidOperationException("JWT Secret must be at least 32 characters to ensure cryptographic security.");
+
             var issuer = jwtSettings["Issuer"];
             var audience = jwtSettings["Audience"];
-            var expiryMinutes = double.Parse(jwtSettings["ExpiryMinutes"] ?? "60");
+            var expiryMinutes = double.TryParse(jwtSettings["ExpiryMinutes"], out var exp) ? exp : 60;
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
