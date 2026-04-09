@@ -2,10 +2,30 @@
 # Il file gitignore è stato creato automaticamente da Microsoft(R) Visual Studio.
 ################################################################################
 
-/.vs/CalorieTracker
+/.vs/
+/.idea/
+*.user
+
+# Build output
+[Bb]in/
+[Oo]bj/
+/publish-api/
 /CalorieTracker.Api/publish-api
-/CalorieTracker.Api/obj
-/CalorieTracker.Api/bin
+
+# SQL migration scripts tracked separately - exclude generated scripts
 *.sql
-/publish-api
-/CalorieTracker.Tests/obj/Release/net9.0
+
+# NuGet
+*.nupkg
+.nuget/
+packages/
+
+# Test results
+TestResults/
+*.trx
+*.coverage
+
+# Rider / VS
+.vs/
+*.suo
+*.user

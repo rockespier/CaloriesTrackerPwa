@@ -41,5 +41,40 @@ namespace CalorieTracker.Tests.Application
             Assert.Equal("Credenciales inválidas.", exception.Message);
             _jwtTokenGeneratorMock.Verify(x => x.GenerateToken(It.IsAny<User>()), Times.Never);
         }
+
+        [Fact]
+        public async Task ExecuteAsync_SadPath_UserNotFound_ThrowsUnauthorizedAccessException()
+        {
+            // Arrange
+            var command = new LoginCommand("noexiste@domain.com", "Password123!");
+
+            _userRepositoryMock.Setup(x => x.GetByEmailAsync(command.Email)).ReturnsAsync((User?)null);
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<UnauthorizedAccessException>(() => _useCase.ExecuteAsync(command));
+            Assert.Equal("Credenciales inválidas.", exception.Message);
+            _jwtTokenGeneratorMock.Verify(x => x.GenerateToken(It.IsAny<User>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_HappyPath_ValidCredentials_ReturnsToken()
+        {
+            // Arrange
+            var command = new LoginCommand("test@domain.com", "CorrectPassword!");
+            var user = new User("test@domain.com", "hashed", "Juan", 180, 80, 75, 30, 'M', ActivityLevel.Sedentary);
+            const string expectedToken = "jwt.token.value";
+
+            _userRepositoryMock.Setup(x => x.GetByEmailAsync(command.Email)).ReturnsAsync(user);
+            _passwordHasherMock.Setup(x => x.VerifyHashedPassword(user, user.PasswordHash, command.Password))
+                .Returns(PasswordVerificationResult.Success);
+            _jwtTokenGeneratorMock.Setup(x => x.GenerateToken(user)).Returns(expectedToken);
+
+            // Act
+            var result = await _useCase.ExecuteAsync(command);
+
+            // Assert
+            Assert.Equal(expectedToken, result);
+            _jwtTokenGeneratorMock.Verify(x => x.GenerateToken(user), Times.Once);
+        }
     }
 }
