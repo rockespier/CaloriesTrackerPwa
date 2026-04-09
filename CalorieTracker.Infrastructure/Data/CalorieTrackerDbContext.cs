@@ -24,6 +24,8 @@ namespace CalorieTracker.Infrastructure.Data
                 entity.HasIndex(e => e.Email).IsUnique();
                 entity.Property(e => e.PasswordHash).IsRequired().HasMaxLength(512);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Goal)
+                    .HasConversion<string>();
             });
         }
     }

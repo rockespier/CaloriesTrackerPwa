@@ -33,6 +33,16 @@ namespace CalorieTracker.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        
+        public async Task UpdateAsync(User user)
+        {
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AddProfileHistoryAsync(UserProfileHistory history)
+        {
+            await _context.UserProfileHistory.AddAsync(history);
+            await _context.SaveChangesAsync();
+        }
     }
 }

@@ -14,6 +14,6 @@ namespace CalorieTracker.Application.Commands
     int Age,
     char Gender,
     ActivityLevel ActivityLevel,
-    string Goal // "Perder", "Mantener", "Ganar"
+    UserGoal Goal
     );
 }

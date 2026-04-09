@@ -10,5 +10,7 @@ namespace CalorieTracker.Application.Interfaces
 
         Task<User?> GetByIdAsync(Guid id);
         Task AddAsync(User user);
+        Task UpdateAsync(User user);
+        Task AddProfileHistoryAsync(UserProfileHistory history);
     }
 }

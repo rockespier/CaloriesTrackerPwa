@@ -6,6 +6,12 @@
 /CalorieTracker.Api/publish-api
 /CalorieTracker.Api/obj
 /CalorieTracker.Api/bin
-*.sql
+/CalorieTracker.Application/bin
+/CalorieTracker.Application/obj
+/CalorieTracker.Domain/bin
+/CalorieTracker.Domain/obj
+/CalorieTracker.Infrastructure/bin
+/CalorieTracker.Infrastructure/obj
+/CalorieTracker.Tests/bin
+/CalorieTracker.Tests/obj
 /publish-api
-/CalorieTracker.Tests/obj/Release/net9.0

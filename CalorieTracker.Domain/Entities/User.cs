@@ -15,7 +15,7 @@ namespace CalorieTracker.Domain.Entities
         public char BiologicalSex { get; set; } // 'M' o 'F'
         public ActivityLevel ActivityLevel { get; set; }
         public int DailyCaloricTarget { get; set; }
-        public string Goal { get; set; }
+        public UserGoal Goal { get; set; } = UserGoal.Maintain;
 
         private User() { } // Para EF Core
 
