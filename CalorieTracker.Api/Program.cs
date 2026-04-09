@@ -10,21 +10,44 @@ using CalorieTracker.Infrastructure.Auth;
 using CalorieTracker.Infrastructure.Data;
 using CalorieTracker.Infrastructure.Repositories;
 using CalorieTracker.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Scalar.AspNetCore;
 using System;
 using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// OpenAPI / Swagger
+builder.Services.AddOpenApi("v1", options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info = new OpenApiInfo
+        {
+            Title = "CalorieTracker API",
+            Version = "v1",
+            Description = "API para seguimiento de calorÃ­as con anÃ¡lisis de nutriciÃ³n mediante IA (Gemini).",
+            Contact = new OpenApiContact { Name = "CalorieTracker Team" }
+        };
+        return Task.CompletedTask;
+    });
+
+    // Esquema de seguridad JWT Bearer
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+});
 
 // Configurare CORS
 builder.Services.AddCors(options =>
@@ -60,11 +83,11 @@ if (!string.IsNullOrEmpty(builder.Configuration["Azure:KeyVault:Uri"]))
     }
 }
 
-// 1. Configuración de Base de Datos
+// 1. Configuraciï¿½n de Base de Datos
 builder.Services.AddDbContext<CalorieTrackerDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. Inyección de Dependencias (IoC)
+// 2. Inyecciï¿½n de Dependencias (IoC)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<RegisterUserUseCase>();
@@ -77,7 +100,7 @@ builder.Services.AddScoped<LoginUseCase>();
 //builder.Services.AddScoped<INutritionAnalyzer, LocalPatternNutritionAnalyzer>();
 builder.Services.AddHttpClient<INutritionAnalyzer, GeminiNutritionAnalyzer>(client =>
 {
-    // Configuración de resiliencia básica: Timeout para evitar que la PWA se quede colgada
+    // Configuraciï¿½n de resiliencia bï¿½sica: Timeout para evitar que la PWA se quede colgada
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 builder.Services.AddScoped<IFoodLogRepository, FoodLogRepository>();
@@ -86,7 +109,7 @@ builder.Services.AddScoped<LogFoodUseCase>();
 
 builder.Services.AddScoped<UserService>();
 
-// 4. Configurar Autenticación JWT nativa
+// 4. Configurar Autenticaciï¿½n JWT nativa
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -107,6 +130,17 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// OpenAPI / Scalar UI (solo en entornos no-productivos)
+if (!app.Environment.IsProduction())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference(opts =>
+    {
+        opts.Title = "CalorieTracker API";
+        opts.Theme = ScalarTheme.Default;
+    });
+}
+
 // 3. Activar Middleware CORS (deve essere prima di UseAuthentication)
 app.UseCors("AllowPwa");
 
@@ -123,11 +157,14 @@ app.MapGet("/", () => Results.Ok(new
     Status = "Running"
 }))
 .WithName("Root")
+.WithSummary("Estado de la API")
+.WithDescription("Devuelve el estado actual y la versiÃ³n de la API.")
+.Produces<object>(StatusCodes.Status200OK)
 .AllowAnonymous();
 
 var nutritionGroup = app.MapGroup("/v1/nutrition")
     .WithTags("Nutrition")
-    .RequireAuthorization(); // Requiere JWT válido
+    .RequireAuthorization(); // Requiere JWT vï¿½lido
 
 nutritionGroup.MapPost("/log", async (HttpContext context, LogFoodRequest request, LogFoodUseCase useCase, ILogger<Program> logger) =>
 {
@@ -153,26 +190,31 @@ nutritionGroup.MapPost("/log", async (HttpContext context, LogFoodRequest reques
         return Results.Problem($"Error interno al procesar el alimento: {ex.Message}");
     }
 })
-.WithName("LogFood");
+.WithName("LogFood")
+.WithSummary("Registra un alimento")
+.WithDescription("Analiza las calorÃ­as del alimento usando IA (Gemini) y registra el resultado.")
+.Produces<object>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status401Unauthorized)
+.ProducesProblem(StatusCodes.Status500InternalServerError);
 
-// 5. Definición de Endpoints (Minimal API)
+// 5. Definiciï¿½n de Endpoints (Minimal API)
 var usersGroup = app.MapGroup("/v1/users").WithTags("Users");
 
 usersGroup.MapPost("/register", async (RegisterUserCommand command, RegisterUserUseCase useCase) =>
 {
     try
     {
-        // En un entorno real de .NET 9, aquí usaríamos Endpoint Filters para validar el Command
+        // En un entorno real de .NET 9, aquï¿½ usarï¿½amos Endpoint Filters para validar el Command
         // antes de que llegue al Use Case (Ej: DataAnnotations nativos).
 
         var userId = await useCase.ExecuteAsync(command);
 
-        // Retornamos 201 Created cumpliendo con los estándares REST
+        // Retornamos 201 Created cumpliendo con los estï¿½ndares REST
         return Results.Created($"/v1/users/{userId}", new { Id = userId });
     }
     catch (InvalidOperationException ex)
     {
-        // 409 Conflict es el código HTTP semánticamente correcto cuando un recurso (email) ya existe.
+        // 409 Conflict es el cï¿½digo HTTP semï¿½nticamente correcto cuando un recurso (email) ya existe.
         return Results.Conflict(new { Message = ex.Message });
     }
     catch (Exception)
@@ -182,7 +224,9 @@ usersGroup.MapPost("/register", async (RegisterUserCommand command, RegisterUser
     }
 })
 .WithName("RegisterUser")
-.Produces(StatusCodes.Status201Created)
+.WithSummary("Registra un nuevo usuario")
+.WithDescription("Crea una cuenta de usuario con email y contraseÃ±a. Devuelve el ID del usuario creado.")
+.Produces<object>(StatusCodes.Status201Created)
 .Produces(StatusCodes.Status409Conflict)
 .Produces(StatusCodes.Status500InternalServerError);
 
@@ -195,16 +239,18 @@ usersGroup.MapPost("/login", async (LoginCommand command, LoginUseCase useCase) 
     }
     catch (UnauthorizedAccessException)
     {
-        // 401 Unauthorized para credenciales inválidas. Nunca confirmar si el error fue el correo o la contraseña por seguridad.
+        // 401 Unauthorized para credenciales invï¿½lidas. Nunca confirmar si el error fue el correo o la contraseï¿½a por seguridad.
         return Results.Unauthorized();
     }
     catch (Exception)
     {
-        return Results.Problem("Ha ocurrido un error inesperado durante la autenticación.");
+        return Results.Problem("Ha ocurrido un error inesperado durante la autenticaciï¿½n.");
     }
 })
 .WithName("LoginUser")
-.Produces(StatusCodes.Status200OK)
+.WithSummary("AutenticaciÃ³n de usuario")
+.WithDescription("Valida las credenciales y devuelve un token JWT Bearer para usar en las peticiones protegidas.")
+.Produces<object>(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status401Unauthorized)
 .Produces(StatusCodes.Status500InternalServerError);
 
@@ -227,7 +273,13 @@ usersGroup.MapGet("/profile", async (HttpContext context, CalorieTrackerDbContex
 
     return user is not null ? Results.Ok(user) : Results.NotFound();
 })
-.RequireAuthorization();
+.RequireAuthorization()
+.WithName("GetProfile")
+.WithSummary("Obtiene el perfil del usuario")
+.WithDescription("Devuelve los datos de perfil del usuario autenticado (peso, altura, objetivo calÃ³rico, etc.).")
+.Produces<object>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status404NotFound)
+.Produces(StatusCodes.Status401Unauthorized);
 
 // Endpoint: PUT /api/v1/users/profile
 usersGroup.MapPut("/profile", async (UpdateProfileCommand dto, HttpContext context, UserService userService) =>
@@ -236,10 +288,16 @@ usersGroup.MapPut("/profile", async (UpdateProfileCommand dto, HttpContext conte
     var success = await userService.UpdateProfileAsync(userId, dto);
 
     return success
-        ? Results.Ok(new { message = "Perfil actualizado con éxito" })
+        ? Results.Ok(new { message = "Perfil actualizado con Ã©xito" })
         : Results.BadRequest("No se pudo actualizar el perfil");
 })
-.RequireAuthorization();
+.RequireAuthorization()
+.WithName("UpdateProfile")
+.WithSummary("Actualiza el perfil del usuario")
+.WithDescription("Actualiza los datos de perfil (peso, objetivo, nivel de actividad, etc.) del usuario autenticado.")
+.Produces<object>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status400BadRequest)
+.Produces(StatusCodes.Status401Unauthorized);
 
 // Endpoint de prueba seguro
 var dashboardGroup = app.MapGroup("/v1/dashboard").WithTags("Dashboard").RequireAuthorization();
@@ -247,10 +305,15 @@ var dashboardGroup = app.MapGroup("/v1/dashboard").WithTags("Dashboard").Require
 dashboardGroup.MapGet("/summary", () =>
 {
     return Results.Ok(new { Message = "Acceso autorizado al resumen nutricional." });
-});
+})
+.WithName("GetDashboardSummary")
+.WithSummary("Resumen nutricional del dashboard")
+.WithDescription("Devuelve un resumen del estado nutricional del usuario autenticado.")
+.Produces<object>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status401Unauthorized);
 
-// Endpoint para obtener los logs de un día específico
-// Endpoint para obtener los logs de un día específico
+// Endpoint para obtener los logs de un dï¿½a especï¿½fico
+// Endpoint para obtener los logs de un dï¿½a especï¿½fico
 nutritionGroup.MapGet("/history/{date}", async (string date, HttpContext context, [FromServices] INutritionRepository repo) =>
 {
     var userId = GetUserIdFromClaims(context);
@@ -261,11 +324,11 @@ nutritionGroup.MapGet("/history/{date}", async (string date, HttpContext context
         System.Globalization.DateTimeStyles.None,
         out DateTime parsedDate))
     {
-        return Results.BadRequest(new { Message = "Fecha inválida. Use el formato yyyy-MM-dd (ej: 2026-04-02)" });
+        return Results.BadRequest(new { Message = "Fecha invï¿½lida. Use el formato yyyy-MM-dd (ej: 2026-04-02)" });
     }
 
     var logs = await repo.GetLogsByDateAsync(userId, parsedDate);
-    var logsList = logs.ToList(); // Materializar para evitar múltiples enumeraciones
+    var logsList = logs.ToList(); // Materializar para evitar mï¿½ltiples enumeraciones
     var total = logsList.Sum(l => l.EstimatedCalories);
 
     return Results.Ok(new
@@ -275,16 +338,25 @@ nutritionGroup.MapGet("/history/{date}", async (string date, HttpContext context
         TotalCalories = total
     });
 })
-.WithName("GetHistoryByDate");
+.WithName("GetHistoryByDate")
+.WithSummary("Historial de alimentos por fecha")
+.WithDescription("Devuelve todos los alimentos registrados en el dÃ­a indicado junto con el total de calorÃ­as. Formato de fecha: yyyy-MM-dd.")
+.Produces<object>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status400BadRequest)
+.Produces(StatusCodes.Status401Unauthorized);
 
-// Endpoint para estadísticas de rango (Dashboard/Gráficos)
+// Endpoint para estadï¿½sticas de rango (Dashboard/Grï¿½ficos)
 nutritionGroup.MapGet("/stats", async (DateTime startDate, DateTime endDate, HttpContext context, [FromServices] INutritionRepository repo) =>
 {
     var userId = GetUserIdFromClaims(context);
     var stats = await repo.GetStatsInRangeAsync(userId, startDate, endDate);
     return Results.Ok(stats);
 })
-.WithName("GetNutritionStats");
+.WithName("GetNutritionStats")
+.WithSummary("EstadÃ­sticas nutricionales por rango de fechas")
+.WithDescription("Devuelve estadÃ­sticas de calorÃ­as consumidas en el rango de fechas especificado. Ãštil para grÃ¡ficos del dashboard.")
+.Produces<object>(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status401Unauthorized);
 
 
 
@@ -297,8 +369,8 @@ Guid GetUserIdFromClaims(HttpContext context)
 
     if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
     {
-        // Lanzamos una excepción que nuestro GlobalExceptionHandler atrapará y convertirá en un 401/500 seguro
-        throw new UnauthorizedAccessException("Token inválido o ID de usuario no encontrado.");
+        // Lanzamos una excepciï¿½n que nuestro GlobalExceptionHandler atraparï¿½ y convertirï¿½ en un 401/500 seguro
+        throw new UnauthorizedAccessException("Token invï¿½lido o ID de usuario no encontrado.");
     }
 
     return userId;
@@ -306,7 +378,31 @@ Guid GetUserIdFromClaims(HttpContext context)
 
 app.Run();
 
-// DTO para la petición HTTP
+// DTO para la peticiÃ³n HTTP
 public record LogFoodRequest(string Text);
 
-
+// Transformer que aÃ±ade el esquema de seguridad JWT Bearer al documento OpenAPI
+internal sealed class BearerSecuritySchemeTransformer(IAuthenticationSchemeProvider authenticationSchemeProvider)
+    : IOpenApiDocumentTransformer
+{
+    public async Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
+    {
+        var authenticationSchemes = await authenticationSchemeProvider.GetAllSchemesAsync();
+        if (authenticationSchemes.Any(s => s.Name == JwtBearerDefaults.AuthenticationScheme))
+        {
+            var securitySchemes = new Dictionary<string, OpenApiSecurityScheme>
+            {
+                [JwtBearerDefaults.AuthenticationScheme] = new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.Http,
+                    Scheme = JwtBearerDefaults.AuthenticationScheme,
+                    In = ParameterLocation.Header,
+                    BearerFormat = "JWT",
+                    Description = "Introduce el token JWT obtenido en el endpoint /v1/users/login. Ejemplo: 'eyJhbGci...'"
+                }
+            };
+            document.Components ??= new OpenApiComponents();
+            document.Components.SecuritySchemes = securitySchemes;
+        }
+    }
+}
