@@ -159,6 +159,8 @@ El frontend estará disponible en `http://localhost:4200`.
 
 ## 📡 Endpoints de la API
 
+> ℹ️ **Arquitectura de API**: Este proyecto usa exclusivamente **Minimal APIs** de ASP.NET Core. No se utiliza el patrón MVC con controladores (`ControllerBase`). Todos los endpoints están definidos directamente en `Program.cs`.
+
 Todos los endpoints (excepto registro y login) requieren el header `Authorization: Bearer <token>`.
 
 ### Autenticación
