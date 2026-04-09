@@ -9,3 +9,7 @@
 *.sql
 /publish-api
 /CalorieTracker.Tests/obj/Release/net9.0
+
+# Build output — all projects
+**/bin/
+**/obj/
