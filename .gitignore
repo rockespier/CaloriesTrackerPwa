@@ -9,3 +9,7 @@
 *.sql
 /publish-api
 /CalorieTracker.Tests/obj/Release/net9.0
+
+# Build artifacts for all projects
+**/bin/
+**/obj/
