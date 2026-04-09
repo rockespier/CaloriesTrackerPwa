@@ -25,6 +25,20 @@ namespace CalorieTracker.Infrastructure.Data
                 entity.Property(e => e.PasswordHash).IsRequired().HasMaxLength(512);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             });
+
+            // Índice compuesto para consultas por usuario y fecha en FoodLogs
+            modelBuilder.Entity<FoodLog>(entity =>
+            {
+                entity.HasIndex(e => new { e.UserId, e.LoggedAt })
+                      .HasDatabaseName("IX_FoodLogs_UserId_LoggedAt");
+            });
+
+            // Índice compuesto para consultas por usuario y fecha en UserProfileHistory
+            modelBuilder.Entity<UserProfileHistory>(entity =>
+            {
+                entity.HasIndex(e => new { e.UserId, e.RecordedAt })
+                      .HasDatabaseName("IX_UserProfileHistory_UserId_RecordedAt");
+            });
         }
     }
 }

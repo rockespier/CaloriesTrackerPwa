@@ -21,8 +21,10 @@ namespace CalorieTracker.Infrastructure.Repositories
 
         public async Task<int> GetTotalCaloriesForDateAsync(Guid userId, DateTime date)
         {
+            var start = date.Date;
+            var end = date.Date.AddDays(1);
             return await _context.FoodLogs
-                .Where(f => f.UserId == userId && f.LoggedAt.Date == date.Date)
+                .Where(f => f.UserId == userId && f.LoggedAt >= start && f.LoggedAt < end)
                 .SumAsync(f => f.EstimatedCalories);
         }
 
@@ -42,19 +44,19 @@ namespace CalorieTracker.Infrastructure.Repositories
         }
         public async Task<IEnumerable<FoodLog>> GetLogsByDateAsync(Guid userId, DateTime date)
         {
-            // Usamos .Date para ignorar la hora y buscar todo lo de ese día.
-            // OrderByDescending asegura que lo último que comió aparezca primero en la lista.
+            var start = date.Date;
+            var end = date.Date.AddDays(1);
             return await _context.FoodLogs
-                .Where(f => f.UserId == userId && f.LoggedAt.Date == date.Date)
+                .Where(f => f.UserId == userId && f.LoggedAt >= start && f.LoggedAt < end)
                 .OrderByDescending(f => f.LoggedAt)
                 .ToListAsync();
         }
         public async Task<IEnumerable<object>> GetStatsInRangeAsync(Guid userId, DateTime startDate, DateTime endDate)
         {
+            var start = startDate.Date;
+            var end = endDate.Date.AddDays(1);
             return await _context.FoodLogs
-                .Where(f => f.UserId == userId
-                    && f.LoggedAt.Date >= startDate.Date
-                    && f.LoggedAt.Date <= endDate.Date)
+                .Where(f => f.UserId == userId && f.LoggedAt >= start && f.LoggedAt < end)
                 .GroupBy(f => f.LoggedAt.Date)
                 .Select(g => new
                 {

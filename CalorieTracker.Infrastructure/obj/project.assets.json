@@ -5193,42 +5193,35 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\RRamos\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "/tmp/codeql-scratch-160a54bc6fb328df/dbs/csharp/working/packages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\RRamos\\source\\repos\\CalorieTracker\\CalorieTracker.Infrastructure\\CalorieTracker.Infrastructure.csproj",
+      "projectUniqueName": "/home/runner/work/CaloriesTrackerPwa/CaloriesTrackerPwa/CalorieTracker.Infrastructure/CalorieTracker.Infrastructure.csproj",
       "projectName": "CalorieTracker.Infrastructure",
-      "projectPath": "C:\\Users\\RRamos\\source\\repos\\CalorieTracker\\CalorieTracker.Infrastructure\\CalorieTracker.Infrastructure.csproj",
-      "packagesPath": "C:\\Users\\RRamos\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\RRamos\\source\\repos\\CalorieTracker\\CalorieTracker.Infrastructure\\obj\\",
+      "projectPath": "/home/runner/work/CaloriesTrackerPwa/CaloriesTrackerPwa/CalorieTracker.Infrastructure/CalorieTracker.Infrastructure.csproj",
+      "packagesPath": "/tmp/codeql-scratch-160a54bc6fb328df/dbs/csharp/working/packages",
+      "outputPath": "/home/runner/work/CaloriesTrackerPwa/CaloriesTrackerPwa/CalorieTracker.Infrastructure/obj/",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-      ],
       "configFilePaths": [
-        "C:\\Users\\RRamos\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "/home/runner/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Users\\RRamos\\source\\repos\\CalorieTracker\\CalorieTracker.Application\\CalorieTracker.Application.csproj": {
-              "projectPath": "C:\\Users\\RRamos\\source\\repos\\CalorieTracker\\CalorieTracker.Application\\CalorieTracker.Application.csproj"
+            "/home/runner/work/CaloriesTrackerPwa/CaloriesTrackerPwa/CalorieTracker.Application/CalorieTracker.Application.csproj": {
+              "projectPath": "/home/runner/work/CaloriesTrackerPwa/CaloriesTrackerPwa/CalorieTracker.Application/CalorieTracker.Application.csproj"
             },
-            "C:\\Users\\RRamos\\source\\repos\\CalorieTracker\\CalorieTracker.Domain\\CalorieTracker.Domain.csproj": {
-              "projectPath": "C:\\Users\\RRamos\\source\\repos\\CalorieTracker\\CalorieTracker.Domain\\CalorieTracker.Domain.csproj"
+            "/home/runner/work/CaloriesTrackerPwa/CaloriesTrackerPwa/CalorieTracker.Domain/CalorieTracker.Domain.csproj": {
+              "projectPath": "/home/runner/work/CaloriesTrackerPwa/CaloriesTrackerPwa/CalorieTracker.Domain/CalorieTracker.Domain.csproj"
             }
           }
         }
@@ -5243,7 +5236,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.300"
+      "SdkAnalysisLevel": "10.0.200"
     },
     "frameworks": {
       "net9.0": {
@@ -5275,12 +5268,22 @@
         ],
         "assetTargetFallback": true,
         "warn": true,
+        "downloadDependencies": [
+          {
+            "name": "Microsoft.AspNetCore.App.Ref",
+            "version": "[9.0.14, 9.0.14]"
+          },
+          {
+            "name": "Microsoft.NETCore.App.Ref",
+            "version": "[9.0.14, 9.0.14]"
+          }
+        ],
         "frameworkReferences": {
           "Microsoft.NETCore.App": {
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/10.0.201/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
