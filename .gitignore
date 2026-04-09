@@ -9,3 +9,6 @@
 *.sql
 /publish-api
 /CalorieTracker.Tests/obj/Release/net9.0
+
+# Archivos de configuración con secretos locales - usar appsettings.Development.json.example como plantilla
+**/appsettings.Development.json

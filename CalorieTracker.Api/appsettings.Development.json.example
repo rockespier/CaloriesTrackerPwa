@@ -6,15 +6,15 @@
     }
   },
   "ConnectionStrings": {
-    "DefaultConnection": "Server=p1425.use1.mysecurecloudhost.com;Database=r3websol_CalTrack;User Id=r3websol_CalTrack;Password=X8^Gsvu!h1rWipm3;TrustServerCertificate=true"
+    "DefaultConnection": "Server=YOUR_SERVER;Database=YOUR_DATABASE;User Id=YOUR_USER;Password=YOUR_PASSWORD;TrustServerCertificate=true"
   },
   "JwtSettings": {
-    "Secret": "AQUI_NO_VA_EL_SECRETO_REAL",
+    "Secret": "YOUR_JWT_SECRET_MIN_32_CHARS_REQUIRED_FOR_HS256",
     "Issuer": "CalorieTrackerApi",
     "Audience": "CalorieTrackerPwa",
     "ExpiryMinutes": 60
   },
   "Gemini": {
-    "ApiKey": ""
+    "ApiKey": "YOUR_GEMINI_API_KEY"
   }
 }
