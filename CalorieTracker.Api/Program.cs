@@ -1,6 +1,7 @@
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using CalorieTracker.Api.Middleware;
 using CalorieTracker.Application.Commands;
 using CalorieTracker.Application.Interfaces;
 using CalorieTracker.Application.Services;
@@ -60,11 +61,11 @@ if (!string.IsNullOrEmpty(builder.Configuration["Azure:KeyVault:Uri"]))
     }
 }
 
-// 1. Configuración de Base de Datos
+// 1. Configuraciï¿½n de Base de Datos
 builder.Services.AddDbContext<CalorieTrackerDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. Inyección de Dependencias (IoC)
+// 2. Inyecciï¿½n de Dependencias (IoC)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<RegisterUserUseCase>();
@@ -77,7 +78,7 @@ builder.Services.AddScoped<LoginUseCase>();
 //builder.Services.AddScoped<INutritionAnalyzer, LocalPatternNutritionAnalyzer>();
 builder.Services.AddHttpClient<INutritionAnalyzer, GeminiNutritionAnalyzer>(client =>
 {
-    // Configuración de resiliencia básica: Timeout para evitar que la PWA se quede colgada
+    // Configuraciï¿½n de resiliencia bï¿½sica: Timeout para evitar que la PWA se quede colgada
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 builder.Services.AddScoped<IFoodLogRepository, FoodLogRepository>();
@@ -86,7 +87,7 @@ builder.Services.AddScoped<LogFoodUseCase>();
 
 builder.Services.AddScoped<UserService>();
 
-// 4. Configurar Autenticación JWT nativa
+// 4. Configurar Autenticaciï¿½n JWT nativa
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -105,7 +106,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+// 5. Registro del manejador global de excepciones (nativo .NET 9)
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 var app = builder.Build();
+
+// Middleware de excepciones globales â€” debe ir primero en el pipeline
+app.UseExceptionHandler();
 
 // 3. Activar Middleware CORS (deve essere prima di UseAuthentication)
 app.UseCors("AllowPwa");
@@ -127,52 +135,36 @@ app.MapGet("/", () => Results.Ok(new
 
 var nutritionGroup = app.MapGroup("/v1/nutrition")
     .WithTags("Nutrition")
-    .RequireAuthorization(); // Requiere JWT válido
+    .RequireAuthorization(); // Requiere JWT vï¿½lido
 
-nutritionGroup.MapPost("/log", async (HttpContext context, LogFoodRequest request, LogFoodUseCase useCase, ILogger<Program> logger) =>
+nutritionGroup.MapPost("/log", async (HttpContext context, LogFoodRequest request, LogFoodUseCase useCase) =>
 {
-    try
-    {
-        // Extraer UserId del token JWT (Claim: sub)
-        var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                          ?? context.User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+    var userId = GetUserIdFromClaims(context);
+    var command = new LogFoodCommand(userId, request.Text);
+    var caloriesAdded = await useCase.ExecuteAsync(command);
 
-        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
-        {
-            return Results.Unauthorized();
-        }
-
-        var command = new LogFoodCommand(userId, request.Text);
-        var caloriesAdded = await useCase.ExecuteAsync(command);
-
-        return Results.Ok(new { Calories = caloriesAdded, Message = "Alimento registrado exitosamente." });
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Error al procesar el alimento. Mensaje: {Message}", ex.Message);
-        return Results.Problem($"Error interno al procesar el alimento: {ex.Message}");
-    }
+    return Results.Ok(new { Calories = caloriesAdded, Message = "Alimento registrado exitosamente." });
 })
 .WithName("LogFood");
 
-// 5. Definición de Endpoints (Minimal API)
+// 5. Definiciï¿½n de Endpoints (Minimal API)
 var usersGroup = app.MapGroup("/v1/users").WithTags("Users");
 
 usersGroup.MapPost("/register", async (RegisterUserCommand command, RegisterUserUseCase useCase) =>
 {
     try
     {
-        // En un entorno real de .NET 9, aquí usaríamos Endpoint Filters para validar el Command
+        // En un entorno real de .NET 9, aquï¿½ usarï¿½amos Endpoint Filters para validar el Command
         // antes de que llegue al Use Case (Ej: DataAnnotations nativos).
 
         var userId = await useCase.ExecuteAsync(command);
 
-        // Retornamos 201 Created cumpliendo con los estándares REST
+        // Retornamos 201 Created cumpliendo con los estï¿½ndares REST
         return Results.Created($"/v1/users/{userId}", new { Id = userId });
     }
     catch (InvalidOperationException ex)
     {
-        // 409 Conflict es el código HTTP semánticamente correcto cuando un recurso (email) ya existe.
+        // 409 Conflict es el cï¿½digo HTTP semï¿½nticamente correcto cuando un recurso (email) ya existe.
         return Results.Conflict(new { Message = ex.Message });
     }
     catch (Exception)
@@ -195,12 +187,12 @@ usersGroup.MapPost("/login", async (LoginCommand command, LoginUseCase useCase) 
     }
     catch (UnauthorizedAccessException)
     {
-        // 401 Unauthorized para credenciales inválidas. Nunca confirmar si el error fue el correo o la contraseña por seguridad.
+        // 401 Unauthorized para credenciales invï¿½lidas. Nunca confirmar si el error fue el correo o la contraseï¿½a por seguridad.
         return Results.Unauthorized();
     }
     catch (Exception)
     {
-        return Results.Problem("Ha ocurrido un error inesperado durante la autenticación.");
+        return Results.Problem("Ha ocurrido un error inesperado durante la autenticaciï¿½n.");
     }
 })
 .WithName("LoginUser")
@@ -236,7 +228,7 @@ usersGroup.MapPut("/profile", async (UpdateProfileCommand dto, HttpContext conte
     var success = await userService.UpdateProfileAsync(userId, dto);
 
     return success
-        ? Results.Ok(new { message = "Perfil actualizado con éxito" })
+        ? Results.Ok(new { message = "Perfil actualizado con ï¿½xito" })
         : Results.BadRequest("No se pudo actualizar el perfil");
 })
 .RequireAuthorization();
@@ -249,8 +241,8 @@ dashboardGroup.MapGet("/summary", () =>
     return Results.Ok(new { Message = "Acceso autorizado al resumen nutricional." });
 });
 
-// Endpoint para obtener los logs de un día específico
-// Endpoint para obtener los logs de un día específico
+// Endpoint para obtener los logs de un dï¿½a especï¿½fico
+// Endpoint para obtener los logs de un dï¿½a especï¿½fico
 nutritionGroup.MapGet("/history/{date}", async (string date, HttpContext context, [FromServices] INutritionRepository repo) =>
 {
     var userId = GetUserIdFromClaims(context);
@@ -261,11 +253,11 @@ nutritionGroup.MapGet("/history/{date}", async (string date, HttpContext context
         System.Globalization.DateTimeStyles.None,
         out DateTime parsedDate))
     {
-        return Results.BadRequest(new { Message = "Fecha inválida. Use el formato yyyy-MM-dd (ej: 2026-04-02)" });
+        return Results.BadRequest(new { Message = "Fecha invï¿½lida. Use el formato yyyy-MM-dd (ej: 2026-04-02)" });
     }
 
     var logs = await repo.GetLogsByDateAsync(userId, parsedDate);
-    var logsList = logs.ToList(); // Materializar para evitar múltiples enumeraciones
+    var logsList = logs.ToList(); // Materializar para evitar mï¿½ltiples enumeraciones
     var total = logsList.Sum(l => l.EstimatedCalories);
 
     return Results.Ok(new
@@ -277,7 +269,7 @@ nutritionGroup.MapGet("/history/{date}", async (string date, HttpContext context
 })
 .WithName("GetHistoryByDate");
 
-// Endpoint para estadísticas de rango (Dashboard/Gráficos)
+// Endpoint para estadï¿½sticas de rango (Dashboard/Grï¿½ficos)
 nutritionGroup.MapGet("/stats", async (DateTime startDate, DateTime endDate, HttpContext context, [FromServices] INutritionRepository repo) =>
 {
     var userId = GetUserIdFromClaims(context);
@@ -297,8 +289,8 @@ Guid GetUserIdFromClaims(HttpContext context)
 
     if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
     {
-        // Lanzamos una excepción que nuestro GlobalExceptionHandler atrapará y convertirá en un 401/500 seguro
-        throw new UnauthorizedAccessException("Token inválido o ID de usuario no encontrado.");
+        // Lanzamos una excepciï¿½n que nuestro GlobalExceptionHandler atraparï¿½ y convertirï¿½ en un 401/500 seguro
+        throw new UnauthorizedAccessException("Token invï¿½lido o ID de usuario no encontrado.");
     }
 
     return userId;
@@ -306,7 +298,7 @@ Guid GetUserIdFromClaims(HttpContext context)
 
 app.Run();
 
-// DTO para la petición HTTP
+// DTO para la peticiï¿½n HTTP
 public record LogFoodRequest(string Text);
 
 
