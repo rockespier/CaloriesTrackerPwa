@@ -9,3 +9,4 @@
 *.sql
 /publish-api
 /CalorieTracker.Tests/obj/Release/net9.0
+/.vs
