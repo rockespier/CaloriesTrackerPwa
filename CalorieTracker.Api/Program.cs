@@ -77,8 +77,8 @@ builder.Services.AddScoped<LoginUseCase>();
 //builder.Services.AddScoped<INutritionAnalyzer, LocalPatternNutritionAnalyzer>();
 builder.Services.AddHttpClient<INutritionAnalyzer, GeminiNutritionAnalyzer>(client =>
 {
-    // Configuración de resiliencia básica: Timeout para evitar que la PWA se quede colgada
-    client.Timeout = TimeSpan.FromSeconds(10);
+    // Configuración de resiliencia básica: Timeout aumentado a 30 segundos para manejar latencia de la API de Gemini
+    client.Timeout = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddScoped<IFoodLogRepository, FoodLogRepository>();
 builder.Services.AddScoped<INutritionRepository, NutritionRepository>();
@@ -147,10 +147,26 @@ nutritionGroup.MapPost("/log", async (HttpContext context, LogFoodRequest reques
 
         return Results.Ok(new { Calories = caloriesAdded, Message = "Alimento registrado exitosamente." });
     }
+    catch (ApplicationException ex) when (ex.InnerException is TaskCanceledException || ex.Message.Contains("tiempo"))
+    {
+        logger.LogWarning(ex, "Timeout al procesar el alimento para el usuario. Descripción: {Text}", request.Text);
+        return Results.Json(
+            new { Message = "El servicio está tardando más de lo esperado. Por favor, intenta de nuevo en unos momentos." },
+            statusCode: StatusCodes.Status504GatewayTimeout
+        );
+    }
+    catch (ApplicationException ex)
+    {
+        logger.LogError(ex, "Error de aplicación al procesar el alimento. Mensaje: {Message}", ex.Message);
+        return Results.Json(
+            new { Message = ex.Message },
+            statusCode: StatusCodes.Status503ServiceUnavailable
+        );
+    }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Error al procesar el alimento. Mensaje: {Message}", ex.Message);
-        return Results.Problem($"Error interno al procesar el alimento: {ex.Message}");
+        logger.LogError(ex, "Error inesperado al procesar el alimento. Mensaje: {Message}", ex.Message);
+        return Results.Problem("Error interno al procesar el alimento. Por favor, intenta de nuevo más tarde.");
     }
 })
 .WithName("LogFood");
@@ -221,7 +237,8 @@ usersGroup.MapGet("/profile", async (HttpContext context, CalorieTrackerDbContex
             u.BiologicalSex,
             u.ActivityLevel,
             u.Goal,
-            u.DailyCaloricTarget
+            u.DailyCaloricTarget,
+            u.TargetWeightKg
         })
         .FirstOrDefaultAsync();
 
@@ -276,6 +293,72 @@ nutritionGroup.MapGet("/history/{date}", async (string date, HttpContext context
     });
 })
 .WithName("GetHistoryByDate");
+
+// Endpoint para obtener el total de calorías de un día específico
+nutritionGroup.MapGet("/daily-total", async (string? date, HttpContext context, [FromServices] INutritionRepository repo) =>
+{
+    var userId = GetUserIdFromClaims(context);
+    
+    DateTime targetDate;
+    
+    // Si no se proporciona fecha, usar hoy
+    if (string.IsNullOrEmpty(date))
+    {
+        targetDate = DateTime.UtcNow.Date;
+    }
+    else
+    {
+        if (!DateTime.TryParseExact(date, new[] { "yyyy-MM-dd", "dd-MM-yyyy", "MM-dd-yyyy" },
+            System.Globalization.CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None,
+            out targetDate))
+        {
+            return Results.BadRequest(new { Message = "Fecha inválida. Use el formato yyyy-MM-dd (ej: 2026-04-02)" });
+        }
+    }
+
+    var totalCalories = await repo.GetTotalCaloriesForDateAsync(userId, targetDate);
+
+    return Results.Ok(new
+    {
+        Date = targetDate.ToString("yyyy-MM-dd"),
+        TotalCalories = totalCalories
+    });
+})
+.WithName("GetDailyTotal");
+
+// Endpoint para obtener el resumen semanal
+nutritionGroup.MapGet("/weekly-summary", async (HttpContext context, [FromServices] INutritionRepository repo, [FromServices] CalorieTrackerDbContext db) =>
+{
+    var userId = GetUserIdFromClaims(context);
+    
+    // Obtener los últimos 7 días
+    var endDate = DateTime.UtcNow.Date;
+    var startDate = endDate.AddDays(-6); // 7 días incluyendo hoy
+    
+    var stats = await repo.GetStatsInRangeAsync(userId, startDate, endDate);
+    var statsList = stats.ToList();
+    
+    // Obtener el objetivo calórico del usuario
+    var user = await db.Users.FindAsync(userId);
+    var dailyTarget = user?.DailyCaloricTarget ?? 0;
+    
+    // Calcular promedios y totales
+    var totalCalories = statsList.Sum(s => (int)s.GetType().GetProperty("TotalCalories")!.GetValue(s)!);
+    var averageCalories = statsList.Any() ? totalCalories / 7 : 0; // Dividir por 7 días
+    
+    return Results.Ok(new
+    {
+        StartDate = startDate.ToString("yyyy-MM-dd"),
+        EndDate = endDate.ToString("yyyy-MM-dd"),
+        DailyStats = statsList,
+        TotalCalories = totalCalories,
+        AverageCalories = averageCalories,
+        DailyTarget = dailyTarget,
+        AverageDifference = averageCalories - dailyTarget
+    });
+})
+.WithName("GetWeeklySummary");
 
 // Endpoint para estadísticas de rango (Dashboard/Gráficos)
 nutritionGroup.MapGet("/stats", async (DateTime startDate, DateTime endDate, HttpContext context, [FromServices] INutritionRepository repo) =>

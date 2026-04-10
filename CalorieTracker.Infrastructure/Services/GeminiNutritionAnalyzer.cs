@@ -61,6 +61,16 @@ Reglas de procesamiento estricto:
                 logger.LogWarning("El modelo de IA devolvió un formato no numérico: {ResponseText}. No se pudieron extraer las calorías.", responseText);
                 throw new InvalidOperationException("La IA no pudo determinar las calorías con exactitud.");
             }
+            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+            {
+                logger.LogError(ex, "Timeout al comunicarse con la API de Gemini. La solicitud excedió el tiempo límite configurado.");
+                throw new ApplicationException("El servicio de análisis nutricional está tardando demasiado. Por favor, intenta de nuevo.", ex);
+            }
+            catch (TaskCanceledException ex)
+            {
+                logger.LogError(ex, "La solicitud a la API de Gemini fue cancelada.");
+                throw new ApplicationException("La solicitud fue cancelada. Por favor, intenta de nuevo.", ex);
+            }
             catch (HttpRequestException ex)
             {
                 logger.LogError(ex, "Error de red al comunicarse con la API de Gemini.");

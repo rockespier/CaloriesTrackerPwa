@@ -11,6 +11,7 @@ namespace CalorieTracker.Application.Commands
         double TargetWeightKg,
         int Age,
         char BiologicalSex,
-        ActivityLevel ActivityLevel
+        ActivityLevel ActivityLevel,
+        string Goal = "Mantener" // Valor por defecto si no se proporciona
     );
 }

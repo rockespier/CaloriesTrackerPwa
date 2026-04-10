@@ -27,7 +27,7 @@ namespace CalorieTracker.Application.UseCases
 
             // Instanciamos el usuario temporalmente para pasar al Hasher. 
             // En implementaciones nativas de Identity, el hasher usa la entidad para salt o configuraciones.
-            var dummyUser = new User(command.Email, string.Empty, command.Name, command.HeightCm, command.CurrentWeightKg, command.TargetWeightKg, command.Age, command.BiologicalSex, command.ActivityLevel);
+            var dummyUser = new User(command.Email, string.Empty, command.Name, command.HeightCm, command.CurrentWeightKg, command.TargetWeightKg, command.Age, command.BiologicalSex, command.ActivityLevel, command.Goal);
 
             string hashedPassword = _passwordHasher.HashPassword(dummyUser, command.Password);
 
@@ -40,7 +40,8 @@ namespace CalorieTracker.Application.UseCases
                 command.TargetWeightKg,
                 command.Age,
                 command.BiologicalSex,
-                command.ActivityLevel
+                command.ActivityLevel,
+                command.Goal
             );
 
             await _userRepository.AddAsync(user);

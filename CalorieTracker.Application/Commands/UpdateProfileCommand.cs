@@ -9,11 +9,12 @@ namespace CalorieTracker.Application.Commands
 {
     public record UpdateProfileCommand
     (
-    double Weight,
-    double Height,
-    int Age,
-    char Gender,
-    ActivityLevel ActivityLevel,
-    string Goal // "Perder", "Mantener", "Ganar"
+    double weight,
+    double height,
+    int age,
+    char gender,
+    ActivityLevel activityLevel,
+    string goal, // "Perder", "Mantener", "Ganar"
+    int dailyCaloricTarget
     );
 }

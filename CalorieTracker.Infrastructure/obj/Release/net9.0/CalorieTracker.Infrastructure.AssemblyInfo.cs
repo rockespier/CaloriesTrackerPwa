@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("CalorieTracker.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a20ccdf47deadcc9bda5c2e49aa91d35984b6bf8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c35247ca326ffad0bc4fcb93719666d46be07ccd")]
 [assembly: System.Reflection.AssemblyProductAttribute("CalorieTracker.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("CalorieTracker.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

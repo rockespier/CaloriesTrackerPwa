@@ -19,7 +19,7 @@ namespace CalorieTracker.Domain.Entities
 
         private User() { } // Para EF Core
 
-        public User(string email, string passwordHash, string name, double heightCm, double currentWeightKg, double targetWeightKg, int age, char biologicalSex, ActivityLevel activityLevel)
+        public User(string email, string passwordHash, string name, double heightCm, double currentWeightKg, double targetWeightKg, int age, char biologicalSex, ActivityLevel activityLevel, string goal = "Mantener")
         {
             // Validaciones de dominio (Guard Clauses) omitidas por brevedad, pero obligatorias en producción.
             Id = Guid.NewGuid();
@@ -32,6 +32,10 @@ namespace CalorieTracker.Domain.Entities
             Age = age;
             BiologicalSex = biologicalSex;
             ActivityLevel = activityLevel;
+            Goal = goal;
+            
+            // Calcular el objetivo calórico al crear el usuario
+            DailyCaloricTarget = (int)CalculateDailyCaloricTarget();
         }
 
         public double CalculateDailyCaloricTarget()
@@ -42,17 +46,13 @@ namespace CalorieTracker.Domain.Entities
 
             double tdee = bmr * GetActivityMultiplier();
 
-            // Lógica simple de déficit: Si el peso objetivo es menor, reducimos 500 kcal para un déficit saludable (aprox 0.5kg por semana).
-            if (TargetWeightKg < CurrentWeightKg)
+            // Lógica basada en el Goal del usuario
+            return Goal switch
             {
-                return tdee - 500;
-            }
-            if (TargetWeightKg > CurrentWeightKg)
-            {
-                return tdee + 500;
-            }
-
-            return tdee; // Mantenimiento
+                "Perder" => tdee - 500,
+                "Ganar" => tdee + 300,
+                _ => tdee // Mantener
+            };
         }
 
         private double GetActivityMultiplier()

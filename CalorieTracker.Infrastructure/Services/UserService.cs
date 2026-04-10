@@ -27,12 +27,12 @@ namespace CalorieTracker.Application.Services
             context.UserProfileHistory.Add(historyEntry);
 
             // 2. ACTUALIZAR DATOS ACTUALES DEL USUARIO
-            user.CurrentWeightKg = dto.Weight;
-            user.HeightCm = dto.Height;
-            user.Age = dto.Age;
-            user.BiologicalSex = dto.Gender;
-            user.ActivityLevel = dto.ActivityLevel;
-            user.Goal = dto.Goal;
+            user.CurrentWeightKg = dto.weight;
+            user.HeightCm = dto.height;
+            user.Age = dto.age;
+            user.BiologicalSex = dto.gender;
+            user.ActivityLevel = dto.activityLevel;
+            user.Goal = dto.goal;
 
             // Recalculamos la meta calórica basado en los nuevos datos
             user.DailyCaloricTarget = CalculateTarget(user);
