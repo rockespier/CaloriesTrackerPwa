@@ -32,8 +32,12 @@ namespace CalorieTracker.Domain.Entities
             Age = age;
             BiologicalSex = biologicalSex;
             ActivityLevel = activityLevel;
-            Goal = goal;
-            
+
+            // Deducir el Goal si no se proporciona
+            Goal = goal ?? (currentWeightKg > targetWeightKg ? "Perder"
+                          : currentWeightKg < targetWeightKg ? "Ganar"
+                          : "Mantener");
+
             // Calcular el objetivo calórico al crear el usuario
             DailyCaloricTarget = (int)CalculateDailyCaloricTarget();
         }

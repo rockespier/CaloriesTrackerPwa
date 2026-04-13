@@ -18,7 +18,8 @@ namespace CalorieTracker.Tests.Domain
                 targetWeightKg: 80, // Quiere perder peso
                 age: 30,
                 biologicalSex: 'M',
-                activityLevel: ActivityLevel.Sedentary
+                activityLevel: ActivityLevel.Sedentary,
+                goal: "Perder"
             );
 
             // Act
