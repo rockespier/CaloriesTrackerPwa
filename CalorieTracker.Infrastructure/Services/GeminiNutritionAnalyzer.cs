@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -14,13 +17,18 @@ namespace CalorieTracker.Infrastructure.Services
         IConfiguration configuration,
         ILogger<GeminiNutritionAnalyzer> logger) : INutritionAnalyzer
     {
+        // Modelos de Gemini ordenados por preferencia (de más rápido/avanzado a más básico)
+        private static readonly string[] FallbackModels = 
+        [
+            "gemini-2.5-flash",      // Modelo principal: baja latencia, última generación
+            "gemini-1.5-flash",      // Fallback 1: estable, ampliamente disponible
+            "gemini-1.5-flash-8b"    // Fallback 2: más ligero, mayor disponibilidad
+        ];
+
         public async Task<int> AnalyzeCaloriesAsync(string foodDescription)
         {
             var apiKey = configuration["Gemini:ApiKey"]
                 ?? throw new InvalidOperationException("Gemini API Key is missing in configuration.");
-
-            // Utilizamos el modelo Flash por su baja latencia, ideal para respuestas en tiempo real en la PWA
-            var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
 
             // Ingeniería de Prompt estructurada para garantizar la integridad de los datos
             var prompt = $@"Actúa como un nutricionista clínico experto.
@@ -38,49 +46,93 @@ Reglas de procesamiento estricto:
                 }
             };
 
-            try
+            // Intentar con cada modelo en cascada
+            List<Exception> attemptErrors = [];
+            
+            foreach (var model in FallbackModels)
             {
-                var response = await httpClient.PostAsJsonAsync(endpoint, payload);
-                response.EnsureSuccessStatusCode();
-
-                var jsonResponse = await response.Content.ReadFromJsonAsync<JsonElement>();
-
-                // Navegación segura por el árbol JSON de la respuesta de Gemini
-                var responseText = jsonResponse
-                    .GetProperty("candidates")[0]
-                    .GetProperty("content")
-                    .GetProperty("parts")[0]
-                    .GetProperty("text")
-                    .GetString()?.Trim();
-
-                if (int.TryParse(responseText, out int calories))
+                try
                 {
-                    return calories;
-                }
+                    var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
+                    
+                    logger.LogInformation("Intentando análisis nutricional con el modelo: {Model}", model);
+                    
+                    var response = await httpClient.PostAsJsonAsync(endpoint, payload);
+                    
+                    // Si recibimos 503 (Service Unavailable), intentar con el siguiente modelo
+                    if (response.StatusCode == HttpStatusCode.ServiceUnavailable)
+                    {
+                        logger.LogWarning("Modelo {Model} no disponible (503). Intentando con modelo de respaldo...", model);
+                        attemptErrors.Add(new HttpRequestException($"Modelo {model} retornó 503 Service Unavailable"));
+                        continue; // Pasar al siguiente modelo
+                    }
+                    
+                    // Para otros errores HTTP, lanzar excepción
+                    response.EnsureSuccessStatusCode();
 
-                logger.LogWarning("El modelo de IA devolvió un formato no numérico: {ResponseText}. No se pudieron extraer las calorías.", responseText);
-                throw new InvalidOperationException("La IA no pudo determinar las calorías con exactitud.");
+                    var jsonResponse = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+                    // Navegación segura por el árbol JSON de la respuesta de Gemini
+                    var responseText = jsonResponse
+                        .GetProperty("candidates")[0]
+                        .GetProperty("content")
+                        .GetProperty("parts")[0]
+                        .GetProperty("text")
+                        .GetString()?.Trim();
+
+                    if (int.TryParse(responseText, out int calories))
+                    {
+                        if (model != FallbackModels[0])
+                        {
+                            logger.LogInformation("Análisis exitoso con modelo de respaldo: {Model}. Calorías estimadas: {Calories}", model, calories);
+                        }
+                        return calories;
+                    }
+
+                    logger.LogWarning("El modelo {Model} devolvió un formato no numérico: {ResponseText}. No se pudieron extraer las calorías.", model, responseText);
+                    attemptErrors.Add(new InvalidOperationException($"Modelo {model} devolvió respuesta no numérica: {responseText}"));
+                    continue; // Intentar con el siguiente modelo
+                }
+                catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+                {
+                    logger.LogError(ex, "Timeout al comunicarse con el modelo {Model}. La solicitud excedió el tiempo límite configurado.", model);
+                    attemptErrors.Add(ex);
+                    continue; // Intentar con el siguiente modelo
+                }
+                catch (TaskCanceledException ex)
+                {
+                    logger.LogError(ex, "La solicitud al modelo {Model} fue cancelada.", model);
+                    attemptErrors.Add(ex);
+                    continue; // Intentar con el siguiente modelo
+                }
+                catch (HttpRequestException ex)
+                {
+                    logger.LogError(ex, "Error de red al comunicarse con el modelo {Model}.", model);
+                    attemptErrors.Add(ex);
+                    
+                    // Si no es un 503, no intentar más modelos
+                    if (!ex.Message.Contains("503"))
+                    {
+                        break;
+                    }
+                    continue; // Intentar con el siguiente modelo
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error inesperado procesando la respuesta del modelo {Model}.", model);
+                    attemptErrors.Add(ex);
+                    continue; // Intentar con el siguiente modelo
+                }
             }
-            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
-            {
-                logger.LogError(ex, "Timeout al comunicarse con la API de Gemini. La solicitud excedió el tiempo límite configurado.");
-                throw new ApplicationException("El servicio de análisis nutricional está tardando demasiado. Por favor, intenta de nuevo.", ex);
-            }
-            catch (TaskCanceledException ex)
-            {
-                logger.LogError(ex, "La solicitud a la API de Gemini fue cancelada.");
-                throw new ApplicationException("La solicitud fue cancelada. Por favor, intenta de nuevo.", ex);
-            }
-            catch (HttpRequestException ex)
-            {
-                logger.LogError(ex, "Error de red al comunicarse con la API de Gemini.");
-                throw new ApplicationException("Servicio de análisis nutricional temporalmente no disponible.", ex);
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error inesperado procesando la respuesta de la IA.");
-                throw new ApplicationException("Error al procesar el alimento.", ex);
-            }
+
+            // Si llegamos aquí, todos los modelos fallaron
+            logger.LogError("Todos los modelos de Gemini fallaron. Total de intentos: {AttemptCount}. Errores: {Errors}", 
+                attemptErrors.Count, 
+                string.Join(" | ", attemptErrors.Select(e => e.Message)));
+
+            throw new ApplicationException(
+                "Servicio de análisis nutricional temporalmente no disponible. Todos los modelos de respaldo fallaron.",
+                attemptErrors.FirstOrDefault());
         }
     }
 }

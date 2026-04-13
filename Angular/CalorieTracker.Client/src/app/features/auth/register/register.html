@@ -1,0 +1,139 @@
+<div class="view-shell flex items-center justify-center">
+  <div class="view-container w-full max-w-4xl">
+    <section class="glass-card rounded-3xl p-6 sm:p-8">
+      <div class="mb-8 text-center">
+        <span class="inline-flex rounded-full bg-blue-100 px-4 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700">Onboarding</span>
+        <h2 class="mt-4 text-3xl font-bold text-slate-900 sm:text-4xl">Crea tu perfil metabolico</h2>
+        <p class="mx-auto mt-2 max-w-2xl text-sm text-slate-600">Estos datos nos permiten calcular objetivos diarios mas precisos para que avances con una estrategia realista.</p>
+      </div>
+
+      <form class="space-y-7" [formGroup]="registerForm" (ngSubmit)="onSubmit()">
+        <div class="rounded-2xl border border-slate-200/70 bg-white/75 p-5">
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Cuenta</h3>
+          <p class="mt-1 text-xs text-slate-400">Los campos marcados con <span class="text-red-500 font-bold">*</span> son obligatorios.</p>
+          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Correo <span class="text-red-500">*</span></label>
+              <input type="email" formControlName="email"
+                class="surface-input block w-full rounded-xl px-4 py-3 text-sm text-slate-800"
+                [class.border-red-400]="registerForm.controls.email.invalid && registerForm.controls.email.touched"
+                placeholder="tu@correo.com">
+              <div *ngIf="registerForm.controls.email.invalid && registerForm.controls.email.touched" class="mt-1 text-xs text-red-500">
+                <span *ngIf="registerForm.controls.email.errors?.['required']">El correo es obligatorio.</span>
+                <span *ngIf="registerForm.controls.email.errors?.['email']">Ingresa un correo valido.</span>
+              </div>
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Contraseña <span class="text-red-500">*</span></label>
+              <input type="password" formControlName="password"
+                class="surface-input block w-full rounded-xl px-4 py-3 text-sm text-slate-800"
+                [class.border-red-400]="registerForm.controls.password.invalid && registerForm.controls.password.touched"
+                placeholder="Crea tu contraseña">
+              <div *ngIf="registerForm.controls.password.dirty || registerForm.controls.password.touched" class="mt-2 space-y-1">
+                <div class="flex items-center gap-1.5 text-xs"
+                     [class.text-green-600]="registerForm.controls.password.value.length >= 8"
+                     [class.text-slate-400]="registerForm.controls.password.value.length < 8">
+                  <span>{{ registerForm.controls.password.value.length >= 8 ? '✓' : '○' }}</span>
+                  <span>Minimo 8 caracteres</span>
+                </div>
+                <div class="flex items-center gap-1.5 text-xs"
+                     [class.text-green-600]="uppercaseOk"
+                     [class.text-slate-400]="!uppercaseOk">
+                  <span>{{ uppercaseOk ? '✓' : '○' }}</span>
+                  <span>Al menos una letra mayuscula</span>
+                </div>
+                <div class="flex items-center gap-1.5 text-xs"
+                     [class.text-green-600]="numberOk"
+                     [class.text-slate-400]="!numberOk">
+                  <span>{{ numberOk ? '✓' : '○' }}</span>
+                  <span>Al menos un numero</span>
+                </div>
+              </div>
+            </div>
+            <div class="md:col-span-2">
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Nombre o alias <span class="text-red-500">*</span></label>
+              <input type="text" formControlName="name"
+                class="surface-input block w-full rounded-xl px-4 py-3 text-sm text-slate-800"
+                [class.border-red-400]="registerForm.controls.name.invalid && registerForm.controls.name.touched"
+                placeholder="Como quieres aparecer en la app">
+              <div *ngIf="registerForm.controls.name.invalid && registerForm.controls.name.touched" class="mt-1 text-xs text-red-500">
+                El nombre es obligatorio.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200/70 bg-white/75 p-5">
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Datos fisicos</h3>
+          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Altura (cm)</label>
+              <input type="number" formControlName="heightCm" class="surface-input block w-full rounded-xl px-4 py-3 text-sm text-slate-800">
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Edad (anos)</label>
+              <input type="number" formControlName="age" class="surface-input block w-full rounded-xl px-4 py-3 text-sm text-slate-800">
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Peso actual (kg)</label>
+              <input type="number" formControlName="currentWeightKg" class="surface-input block w-full rounded-xl px-4 py-3 text-sm text-slate-800">
+            </div>
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Peso deseado (kg)</label>
+              <input type="number" formControlName="targetWeightKg" class="surface-input block w-full rounded-xl px-4 py-3 text-sm text-slate-800">
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-slate-200/70 bg-white/75 p-5">
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500">Perfil metabolico</h3>
+          <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Sexo biologico</label>
+              <select formControlName="biologicalSex" class="surface-input block w-full rounded-xl px-4 py-3 text-sm text-slate-800">
+                <option value="M">Masculino</option>
+                <option value="F">Femenino</option>
+              </select>
+              <p class="mt-1 text-xs text-slate-500">Se utiliza para el calculo de gasto energetico basal.</p>
+            </div>
+
+            <div>
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Nivel de actividad</label>
+              <select formControlName="activityLevel" class="surface-input block w-full rounded-xl px-4 py-3 text-sm text-slate-800">
+                <option value="0">Sedentario (Poco o ningun ejercicio)</option>
+                <option value="1">Ligero (Ejercicio 1-3 dias/sem)</option>
+                <option value="2">Moderado (Ejercicio 3-5 dias/sem)</option>
+                <option value="3">Activo (Ejercicio 6-7 dias/sem)</option>
+                <option value="4">Muy activo (Doble turno/fisico)</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="mb-1 block text-sm font-semibold text-slate-700">Objetivo <span class="text-red-500">*</span></label>
+              <select formControlName="goal" class="surface-input block w-full rounded-xl px-4 py-3 text-sm text-slate-800">
+                <option value="Perder">Perder peso</option>
+                <option value="Mantener">Mantener peso</option>
+                <option value="Ganar">Ganar masa muscular</option>
+              </select>
+              <p class="mt-1 text-xs text-slate-500">Usamos esto para ajustar tu meta calorica diaria.</p>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="errorMessage" class="rounded-xl border border-red-200 bg-red-50 p-3 text-center text-sm font-medium text-red-700">
+          {{ errorMessage }}
+        </div>
+
+        <div class="space-y-4">
+          <button type="submit" [disabled]="registerForm.invalid || isLoading" class="brand-button w-full rounded-xl px-4 py-3 text-sm font-semibold shadow-lg shadow-slate-900/20 transition disabled:cursor-not-allowed disabled:opacity-50">
+            <span *ngIf="isLoading">Procesando...</span>
+            <span *ngIf="!isLoading">Comenzar mi viaje</span>
+          </button>
+
+          <div class="text-center text-sm">
+            <a routerLink="/login" class="font-semibold text-slate-700 transition hover:text-blue-700">Ya tienes cuenta? Inicia sesion</a>
+          </div>
+        </div>
+      </form>
+    </section>
+  </div>
+</div>

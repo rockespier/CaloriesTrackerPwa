@@ -1,0 +1,264 @@
+<div class="view-shell pb-10">
+  <div class="view-container max-w-6xl space-y-6">
+    <header class="glass-card flex items-center justify-between rounded-3xl p-5 sm:p-6">
+      <div>
+        <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Panel diario</p>
+        <h1 class="mt-1 text-3xl font-bold text-slate-900">Resumen de hoy</h1>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a routerLink="/profile" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:border-slate-300" title="Ver perfil">
+          <span class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+            <span class="hidden text-sm font-semibold sm:inline">Perfil</span>
+          </span>
+        </a>
+
+        <a routerLink="/history" class="rounded-xl border border-slate-200 bg-white p-2 text-slate-700 transition hover:border-slate-300" title="Ver historial">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+          </svg>
+        </a>
+
+        <button (click)="logout()" class="rounded-xl border border-red-200 bg-white p-2 text-red-500 transition hover:bg-red-50">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+      <section class="space-y-6">
+        <article class="glass-card rounded-3xl p-6 sm:p-7">
+          <h2 class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Calorias restantes</h2>
+
+          <div class="mt-5 flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div class="relative h-48 w-48">
+              <svg class="h-full w-full -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" class="text-slate-200" stroke-width="10" stroke="currentColor" fill="transparent"></circle>
+                <circle cx="50" cy="50" r="45" class="text-blue-600 transition-all duration-1000 ease-in-out" stroke-width="10" stroke-dasharray="282.7" [attr.stroke-dashoffset]="282.7 - (282.7 * progressPercentage / 100)" stroke-linecap="round" stroke="currentColor" fill="transparent"></circle>
+              </svg>
+              <div class="absolute inset-0 flex flex-col items-center justify-center">
+                <span class="text-4xl font-extrabold text-slate-900">{{ caloriesRemaining | number:'1.0-0' }}</span>
+                <span class="text-sm text-slate-500">kcal</span>
+              </div>
+            </div>
+
+            <div class="grid w-full max-w-sm grid-cols-2 gap-3">
+              <div class="rounded-2xl bg-white p-4 text-center shadow-sm">
+                <p class="text-xs uppercase tracking-wide text-slate-500">Meta diaria</p>
+                <p class="mt-1 text-xl font-bold text-slate-900">{{ dailyCaloricTarget() }}</p>
+              </div>
+              <div class="rounded-2xl bg-white p-4 text-center shadow-sm">
+                <p class="text-xs uppercase tracking-wide text-slate-500">Consumidas</p>
+                <p class="mt-1 text-xl font-bold text-emerald-600">{{ caloriesConsumed() }}</p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="glass-card rounded-3xl p-6 sm:p-7">
+          <h3 class="text-lg font-semibold text-slate-900">Que comiste hoy?</h3>
+          <p class="mt-1 text-sm text-slate-500">Describe tu comida y la app estimara calorias automaticamente.</p>
+
+          <div class="relative mt-4">
+            <textarea
+              [(ngModel)]="foodInputText"
+              rows="4"
+              class="surface-input block w-full resize-none rounded-2xl p-4 pr-14 text-sm text-slate-800"
+              placeholder="Ej: Dos huevos revueltos con pan integral y una taza de cafe"
+              [disabled]="isProcessing()"></textarea>
+
+            <button
+              type="button"
+              (click)="toggleListening()"
+              [ngClass]="{'text-red-500 animate-pulse': isListening(), 'text-slate-400 hover:text-blue-700': !isListening()}"
+              class="absolute bottom-3 right-3 rounded-full bg-white p-2 shadow-sm transition"
+              [disabled]="isProcessing()">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+              </svg>
+            </button>
+          </div>
+
+          <div *ngIf="errorMessage()" class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+            {{ errorMessage() }}
+          </div>
+
+          <button
+            (click)="processFoodEntry()"
+            [disabled]="!foodInputText().trim() || isProcessing()"
+            class="brand-button mt-4 flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold shadow-lg shadow-slate-900/20 transition disabled:cursor-not-allowed disabled:opacity-50">
+            <span *ngIf="isProcessing()" class="inline-flex h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white"></span>
+            <span *ngIf="isProcessing()">Calculando calorias...</span>
+            <span *ngIf="!isProcessing()">Registrar alimento</span>
+          </button>
+
+          <div *ngIf="isProcessing()" class="mt-3 space-y-2">
+            <div class="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+              <div class="h-full w-2/3 animate-pulse rounded-full bg-gradient-to-r from-blue-600 via-cyan-500 to-emerald-500"></div>
+            </div>
+            <p class="text-xs font-medium text-slate-500">Procesando registro de alimento...</p>
+          </div>
+        </article>
+
+        <section *ngIf="foodLogs().length > 0" class="glass-card rounded-3xl p-6 sm:p-7">
+          <h3 class="text-lg font-semibold text-slate-900">Consumo de hoy</h3>
+          <ul class="mt-4 divide-y divide-slate-200/70">
+            <li *ngFor="let log of foodLogs()" class="flex items-center justify-between py-4">
+              <div class="flex items-start gap-3">
+                <div class="mt-0.5 rounded-lg bg-blue-100 p-2 text-blue-700">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.362 5.214A8.252 8.252 0 0112 21 8.25 8.25 0 016.038 7.048 8.287 8.287 0 009 9.6a8.983 8.983 0 013.361-6.866 8.21 8.21 0 003 2.48z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 18a3.75 3.75 0 00.495-7.467 5.99 5.99 0 00-1.925 3.546 5.974 5.974 0 01-2.133-1A3.75 3.75 0 0012 18z" />
+                  </svg>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-slate-900 capitalize">{{ log.text }}</p>
+                  <p class="text-xs text-slate-500">{{ log.timestamp | date:'shortTime' }}</p>
+                </div>
+              </div>
+              <div class="text-sm font-bold text-slate-900">+{{ log.calories }} kcal</div>
+            </li>
+          </ul>
+        </section>
+      </section>
+
+      <aside class="space-y-6">
+        <section class="rounded-3xl bg-gradient-to-br from-slate-900 via-blue-800 to-cyan-700 p-6 text-white shadow-xl shadow-blue-900/30">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="text-xl font-bold">Estado semanal</h3>
+              <p class="mt-1 text-xs text-blue-100">Basado en tus ultimos 7 dias</p>
+            </div>
+            <a routerLink="/history" class="rounded-lg bg-white/15 p-2 text-white transition hover:bg-white/25" title="Ver historial">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.25v7.5m0-7.5L9.75 10.5M12 8.25l2.25 2.25M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </a>
+          </div>
+
+          <div class="mt-6">
+            <div class="mb-1 flex justify-between text-sm">
+              <span>{{ weeklyStatusLabel() }}</span>
+              <span>{{ weeklyStatus()?.daysActive ?? 0 }}/7 dias</span>
+            </div>
+            <div class="h-2 w-full rounded-full bg-white/25">
+              <div class="h-2 rounded-full bg-white" [style.width.%]="weeklyProgressWidth()"></div>
+            </div>
+            <p class="mt-3 text-xs text-blue-100/90">{{ weeklyStatusMessage() }}</p>
+          </div>
+        </section>
+
+        <section class="rounded-3xl border border-lime-300/25 bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 p-5 text-slate-100 shadow-xl shadow-emerald-950/40 sm:p-6">
+          <div class="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-lime-300/90">Rendimiento</p>
+              <h3 class="text-lg font-bold text-white">Consumo de 7 dias</h3>
+              <p class="text-xs text-slate-300">Panel de carga calorica semanal</p>
+            </div>
+            <div *ngIf="!isLoadingStats() && chartStats().length > 0" class="text-right">
+              <p class="text-[11px] uppercase tracking-[0.18em] text-slate-400">Promedio</p>
+              <p class="text-lg font-bold text-lime-300">{{ chartAverageCalories() }} kcal</p>
+            </div>
+          </div>
+
+          <div *ngIf="isLoadingStats()" class="py-8 text-sm text-slate-300">Cargando estadisticas...</div>
+          <div *ngIf="!isLoadingStats() && rangeStats().length === 0" class="py-8 text-sm text-slate-300">No hay estadisticas disponibles.</div>
+
+          <div *ngIf="!isLoadingStats() && chartStats().length > 0" class="space-y-4">
+            <div class="rounded-2xl border border-white/10 bg-slate-900/65 p-3">
+              <svg viewBox="0 0 320 180" class="h-44 w-full overflow-visible sm:h-52" preserveAspectRatio="none" aria-label="Grafico de calorias de los ultimos siete dias">
+                <defs>
+                  <linearGradient id="statsAreaGradient" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0%" stop-color="currentColor" stop-opacity="0.22"></stop>
+                    <stop offset="100%" stop-color="currentColor" stop-opacity="0.02"></stop>
+                  </linearGradient>
+                </defs>
+
+                <line x1="16" y1="152" x2="304" y2="152" stroke="#334155" stroke-width="1"></line>
+                <path [attr.d]="chartAreaPath()" fill="url(#statsAreaGradient)" class="text-lime-400"></path>
+                <path [attr.d]="chartLinePath()" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="text-lime-300"></path>
+
+                <ng-container *ngFor="let point of chartPoints()">
+                  <circle
+                    [attr.cx]="point.x"
+                    [attr.cy]="point.y"
+                    r="6"
+                    [attr.fill]="getPointFill(point.totalCalories)"
+                    [attr.stroke]="getPointStroke(point.totalCalories)"
+                    stroke-width="3"
+                    class="cursor-pointer transition-transform duration-150"
+                    (mouseenter)="showTooltip(point)"
+                    (mouseleave)="hideTooltip()"></circle>
+                  <text
+                    [attr.x]="point.x"
+                    [attr.y]="point.y - 12"
+                    text-anchor="middle"
+                    class="text-[10px]"
+                    [attr.fill]="isAboveTarget(point.totalCalories) ? '#fda4af' : '#d9f99d'">{{ point.totalCalories }}</text>
+                  <text [attr.x]="point.x" y="172" text-anchor="middle" class="fill-slate-400 text-[10px]">{{ point.label }}</text>
+                </ng-container>
+
+                <g *ngIf="hoveredPoint() as activePoint">
+                  <line
+                    [attr.x1]="activePoint.x"
+                    [attr.y1]="activePoint.y"
+                    [attr.x2]="activePoint.x"
+                    y2="152"
+                    stroke="#64748b"
+                    stroke-dasharray="4 4"
+                    stroke-width="1"></line>
+                  <rect
+                    [attr.x]="activePoint.x > 230 ? activePoint.x - 116 : activePoint.x + 10"
+                    [attr.y]="activePoint.y < 52 ? activePoint.y + 10 : activePoint.y - 48"
+                    width="106"
+                    height="40"
+                    rx="10"
+                    fill="#020617"></rect>
+                  <text
+                    [attr.x]="activePoint.x > 230 ? activePoint.x - 106 : activePoint.x + 20"
+                    [attr.y]="activePoint.y < 52 ? activePoint.y + 26 : activePoint.y - 32"
+                    fill="#e2e8f0"
+                    class="text-[10px] font-medium">{{ formatLongDate(activePoint.date) }}</text>
+                  <text
+                    [attr.x]="activePoint.x > 230 ? activePoint.x - 106 : activePoint.x + 20"
+                    [attr.y]="activePoint.y < 52 ? activePoint.y + 40 : activePoint.y - 18"
+                    [attr.fill]="isAboveTarget(activePoint.totalCalories) ? '#fda4af' : '#bef264'"
+                    class="text-[11px] font-semibold">{{ activePoint.totalCalories }} kcal</text>
+                </g>
+              </svg>
+
+              <div class="mt-3 flex items-center justify-between text-xs text-slate-300">
+                <div class="flex items-center gap-2">
+                  <span class="inline-block h-2.5 w-2.5 rounded-full bg-lime-400"></span>
+                  <span>Dentro de la meta</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="inline-block h-2.5 w-2.5 rounded-full bg-rose-400"></span>
+                  <span>Sobre la meta</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 sm:gap-3">
+              <div
+                *ngFor="let item of chartStats()"
+                class="rounded-xl border px-3 py-2"
+                [ngClass]="isAboveTarget(item.totalCalories) ? 'border-rose-300/30 bg-rose-950/35' : 'border-lime-300/25 bg-lime-900/20'">
+                <p class="text-[11px] uppercase tracking-wide text-slate-400">{{ formatWeekdayShort(item.date) }}</p>
+                <p class="text-sm font-semibold text-white">{{ item.totalCalories }} kcal</p>
+                <p class="text-xs" [ngClass]="isAboveTarget(item.totalCalories) ? 'text-rose-300' : 'text-lime-300'">
+                  {{ isAboveTarget(item.totalCalories) ? 'Sobre la meta' : 'En meta' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </main>
+  </div>
+</div>

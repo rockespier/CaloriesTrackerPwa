@@ -1,0 +1,84 @@
+<div class="view-shell pb-8">
+  <div class="view-container max-w-4xl space-y-6">
+    <header class="glass-card flex items-center justify-between rounded-3xl p-5 sm:p-6">
+      <div class="flex items-center gap-3">
+        <a routerLink="/dashboard" class="rounded-xl bg-slate-900 p-2 text-white transition hover:scale-105">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+        </a>
+        <div>
+          <p class="text-xs uppercase tracking-[0.16em] text-slate-500">Historial</p>
+          <h1 class="text-2xl font-bold text-slate-900">Registro de comidas</h1>
+        </div>
+      </div>
+    </header>
+
+    <section class="glass-card rounded-3xl px-4 py-4 sm:px-6">
+      <div class="flex items-center justify-between">
+        <button (click)="changeDate(-1)" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:border-slate-300">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+          </svg>
+        </button>
+
+        <div class="text-center">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-700">{{ selectedDate() | date:'EEEE' }}</p>
+          <p class="text-xl font-bold text-slate-900">{{ selectedDate() | date:'dd MMM yyyy' }}</p>
+        </div>
+
+        <button (click)="changeDate(1)" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 transition hover:border-slate-300">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <main>
+      <div *ngIf="isLoading()" class="glass-card flex justify-center rounded-3xl py-16">
+        <div class="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
+      </div>
+
+      <div *ngIf="errorMessage()" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-red-700">
+        {{ errorMessage() }}
+      </div>
+
+      <div *ngIf="!isLoading() && !errorMessage() && !historyData()" class="glass-card rounded-3xl py-16 text-center">
+        <p class="text-lg text-slate-500">No hay datos para esta fecha.</p>
+      </div>
+
+      <div *ngIf="!isLoading() && historyData()" class="space-y-5">
+        <section class="glass-card flex items-center justify-between rounded-3xl p-6">
+          <div>
+            <p class="text-xs uppercase tracking-wide text-slate-500">Total del dia</p>
+            <p class="mt-1 text-4xl font-extrabold text-slate-900">{{ historyData()?.totalCalories }} <span class="text-sm font-medium text-slate-500">kcal</span></p>
+          </div>
+          <div [ngClass]="historyData()!.totalCalories > 2200 ? 'text-red-500' : 'text-emerald-600'">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="h-12 w-12">
+              <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </section>
+
+        <section class="space-y-3">
+          <h3 class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Detalle de ingesta</h3>
+
+          <article *ngFor="let log of historyLogs()" class="elevated-card rounded-2xl bg-white px-5 py-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-semibold text-slate-900 capitalize">{{ log.text }}</p>
+                <p class="text-xs text-slate-500">{{ log.timestamp | date:'shortTime' }}</p>
+              </div>
+              <p class="text-lg font-bold text-blue-700">{{ log.calories }} kcal</p>
+            </div>
+          </article>
+
+          <div *ngIf="historyLogs().length === 0" class="glass-card rounded-2xl py-10 text-center text-slate-500">
+            No hay registros para este dia.
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+</div>

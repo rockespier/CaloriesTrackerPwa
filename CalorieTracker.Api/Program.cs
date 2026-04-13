@@ -31,7 +31,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowPwa", policy =>
     {
-        policy.WithOrigins("http://localhost:4200") // La tua PWA
+        policy.WithOrigins("http://localhost:51363") // La tua PWA
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

@@ -1,1 +1,68 @@
-/* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Outfit:wght@500;600;700&display=swap');
+
+html,
+body {
+	height: 100%;
+	margin: 0;
+	background:
+		radial-gradient(circle at 12% 18%, rgba(45, 212, 191, 0.16), transparent 38%),
+		radial-gradient(circle at 88% 12%, rgba(251, 191, 36, 0.22), transparent 34%),
+		linear-gradient(180deg, #f5f8ff 0%, #eef3fb 45%, #f8fbff 100%);
+	color: #0f172a;
+	font-family: 'Manrope', sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+	font-family: 'Outfit', sans-serif;
+	letter-spacing: -0.01em;
+}
+
+.view-shell {
+	min-height: 100vh;
+	padding: 1.25rem;
+}
+
+.view-container {
+	max-width: 1100px;
+	margin: 0 auto;
+}
+
+.glass-card {
+	background: rgba(255, 255, 255, 0.8);
+	border: 1px solid rgba(148, 163, 184, 0.22);
+	box-shadow: 0 24px 56px -38px rgba(15, 23, 42, 0.5);
+	backdrop-filter: blur(8px);
+}
+
+.elevated-card {
+	border: 1px solid rgba(148, 163, 184, 0.18);
+	box-shadow: 0 20px 44px -28px rgba(15, 23, 42, 0.38);
+}
+
+.brand-button {
+	background: linear-gradient(135deg, #0f172a, #1d4ed8);
+	color: #fff;
+}
+
+.brand-button:hover {
+	filter: brightness(1.06);
+}
+
+.surface-input {
+	border: 1px solid #cbd5e1;
+	background: rgba(248, 250, 252, 0.9);
+}
+
+.surface-input:focus {
+	outline: none;
+	border-color: #2563eb;
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
