@@ -1,4 +1,5 @@
-﻿namespace CalorieTracker.Application.Commands
-{
-    public record LoginCommand(string Email, string Password);
-}
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace CalorieTracker.Application.Commands;
+
+public record Log
