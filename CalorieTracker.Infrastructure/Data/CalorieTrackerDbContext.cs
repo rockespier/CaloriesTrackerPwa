@@ -11,8 +11,9 @@ namespace CalorieTracker.Infrastructure.Data
 
         public DbSet<User> Users { get; set; }
         public DbSet<FoodLog> FoodLogs { get; set; }
-
         public DbSet<UserProfileHistory> UserProfileHistory { get; set; }
+        public DbSet<ActivityLog> ActivityLogs { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Mapeo Fluent API para Database First
@@ -24,6 +25,16 @@ namespace CalorieTracker.Infrastructure.Data
                 entity.HasIndex(e => e.Email).IsUnique();
                 entity.Property(e => e.PasswordHash).IsRequired().HasMaxLength(512);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            });
+
+            modelBuilder.Entity<ActivityLog>(entity =>
+            {
+                entity.ToTable("ActivityLogs");
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.ActivityDescription).IsRequired();
+                entity.Property(e => e.DurationMinutes).IsRequired();
+                entity.Property(e => e.CaloriesBurned).IsRequired();
+                entity.Property(e => e.LoggedAt).IsRequired();
             });
         }
     }

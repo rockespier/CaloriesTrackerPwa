@@ -10,6 +10,7 @@ using CalorieTracker.Infrastructure.Auth;
 using CalorieTracker.Infrastructure.Data;
 using CalorieTracker.Infrastructure.Repositories;
 using CalorieTracker.Infrastructure.Services;
+using System.Globalization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -60,11 +61,11 @@ if (!string.IsNullOrEmpty(builder.Configuration["Azure:KeyVault:Uri"]))
     }
 }
 
-// 1. Configuración de Base de Datos
+// 1. Configuraciï¿½n de Base de Datos
 builder.Services.AddDbContext<CalorieTrackerDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 2. Inyección de Dependencias (IoC)
+// 2. Inyecciï¿½n de Dependencias (IoC)
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<RegisterUserUseCase>();
@@ -77,7 +78,7 @@ builder.Services.AddScoped<LoginUseCase>();
 //builder.Services.AddScoped<INutritionAnalyzer, LocalPatternNutritionAnalyzer>();
 builder.Services.AddHttpClient<INutritionAnalyzer, GeminiNutritionAnalyzer>(client =>
 {
-    // Configuración de resiliencia básica: Timeout aumentado a 30 segundos para manejar latencia de la API de Gemini
+    // Configuraciï¿½n de resiliencia bï¿½sica: Timeout aumentado a 30 segundos para manejar latencia de la API de Gemini
     client.Timeout = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddScoped<IFoodLogRepository, FoodLogRepository>();
@@ -86,7 +87,15 @@ builder.Services.AddScoped<LogFoodUseCase>();
 
 builder.Services.AddScoped<UserService>();
 
-// 4. Configurar Autenticación JWT nativa
+// Actividad fÃ­sica con Gemini
+builder.Services.AddHttpClient<IActivityAnalyzer, GeminiActivityAnalyzer>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+builder.Services.AddScoped<LogActivityUseCase>();
+
+// 4. Configurar Autenticaciï¿½n JWT nativa
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -127,7 +136,7 @@ app.MapGet("/", () => Results.Ok(new
 
 var nutritionGroup = app.MapGroup("/v1/nutrition")
     .WithTags("Nutrition")
-    .RequireAuthorization(); // Requiere JWT válido
+    .RequireAuthorization(); // Requiere JWT vï¿½lido
 
 nutritionGroup.MapPost("/log", async (HttpContext context, LogFoodRequest request, LogFoodUseCase useCase, ILogger<Program> logger) =>
 {
@@ -149,15 +158,15 @@ nutritionGroup.MapPost("/log", async (HttpContext context, LogFoodRequest reques
     }
     catch (ApplicationException ex) when (ex.InnerException is TaskCanceledException || ex.Message.Contains("tiempo"))
     {
-        logger.LogWarning(ex, "Timeout al procesar el alimento para el usuario. Descripción: {Text}", request.Text);
+        logger.LogWarning(ex, "Timeout al procesar el alimento para el usuario. Descripciï¿½n: {Text}", request.Text);
         return Results.Json(
-            new { Message = "El servicio está tardando más de lo esperado. Por favor, intenta de nuevo en unos momentos." },
+            new { Message = "El servicio estï¿½ tardando mï¿½s de lo esperado. Por favor, intenta de nuevo en unos momentos." },
             statusCode: StatusCodes.Status504GatewayTimeout
         );
     }
     catch (ApplicationException ex)
     {
-        logger.LogError(ex, "Error de aplicación al procesar el alimento. Mensaje: {Message}", ex.Message);
+        logger.LogError(ex, "Error de aplicaciï¿½n al procesar el alimento. Mensaje: {Message}", ex.Message);
         return Results.Json(
             new { Message = ex.Message },
             statusCode: StatusCodes.Status503ServiceUnavailable
@@ -166,29 +175,29 @@ nutritionGroup.MapPost("/log", async (HttpContext context, LogFoodRequest reques
     catch (Exception ex)
     {
         logger.LogError(ex, "Error inesperado al procesar el alimento. Mensaje: {Message}", ex.Message);
-        return Results.Problem("Error interno al procesar el alimento. Por favor, intenta de nuevo más tarde.");
+        return Results.Problem("Error interno al procesar el alimento. Por favor, intenta de nuevo mï¿½s tarde.");
     }
 })
 .WithName("LogFood");
 
-// 5. Definición de Endpoints (Minimal API)
+// 5. Definiciï¿½n de Endpoints (Minimal API)
 var usersGroup = app.MapGroup("/v1/users").WithTags("Users");
 
 usersGroup.MapPost("/register", async (RegisterUserCommand command, RegisterUserUseCase useCase) =>
 {
     try
     {
-        // En un entorno real de .NET 9, aquí usaríamos Endpoint Filters para validar el Command
+        // En un entorno real de .NET 9, aquï¿½ usarï¿½amos Endpoint Filters para validar el Command
         // antes de que llegue al Use Case (Ej: DataAnnotations nativos).
 
         var userId = await useCase.ExecuteAsync(command);
 
-        // Retornamos 201 Created cumpliendo con los estándares REST
+        // Retornamos 201 Created cumpliendo con los estï¿½ndares REST
         return Results.Created($"/v1/users/{userId}", new { Id = userId });
     }
     catch (InvalidOperationException ex)
     {
-        // 409 Conflict es el código HTTP semánticamente correcto cuando un recurso (email) ya existe.
+        // 409 Conflict es el cï¿½digo HTTP semï¿½nticamente correcto cuando un recurso (email) ya existe.
         return Results.Conflict(new { Message = ex.Message });
     }
     catch (Exception)
@@ -211,12 +220,12 @@ usersGroup.MapPost("/login", async (LoginCommand command, LoginUseCase useCase) 
     }
     catch (UnauthorizedAccessException)
     {
-        // 401 Unauthorized para credenciales inválidas. Nunca confirmar si el error fue el correo o la contraseña por seguridad.
+        // 401 Unauthorized para credenciales invï¿½lidas. Nunca confirmar si el error fue el correo o la contraseï¿½a por seguridad.
         return Results.Unauthorized();
     }
     catch (Exception)
     {
-        return Results.Problem("Ha ocurrido un error inesperado durante la autenticación.");
+        return Results.Problem("Ha ocurrido un error inesperado durante la autenticaciï¿½n.");
     }
 })
 .WithName("LoginUser")
@@ -253,7 +262,7 @@ usersGroup.MapPut("/profile", async (UpdateProfileCommand dto, HttpContext conte
     var success = await userService.UpdateProfileAsync(userId, dto);
 
     return success
-        ? Results.Ok(new { message = "Perfil actualizado con éxito" })
+        ? Results.Ok(new { message = "Perfil actualizado con ï¿½xito" })
         : Results.BadRequest("No se pudo actualizar el perfil");
 })
 .RequireAuthorization();
@@ -266,8 +275,8 @@ dashboardGroup.MapGet("/summary", () =>
     return Results.Ok(new { Message = "Acceso autorizado al resumen nutricional." });
 });
 
-// Endpoint para obtener los logs de un día específico
-// Endpoint para obtener los logs de un día específico
+// Endpoint para obtener los logs de un dï¿½a especï¿½fico
+// Endpoint para obtener los logs de un dï¿½a especï¿½fico
 nutritionGroup.MapGet("/history/{date}", async (string date, HttpContext context, [FromServices] INutritionRepository repo) =>
 {
     var userId = GetUserIdFromClaims(context);
@@ -278,11 +287,11 @@ nutritionGroup.MapGet("/history/{date}", async (string date, HttpContext context
         System.Globalization.DateTimeStyles.None,
         out DateTime parsedDate))
     {
-        return Results.BadRequest(new { Message = "Fecha inválida. Use el formato yyyy-MM-dd (ej: 2026-04-02)" });
+        return Results.BadRequest(new { Message = "Fecha invï¿½lida. Use el formato yyyy-MM-dd (ej: 2026-04-02)" });
     }
 
     var logs = await repo.GetLogsByDateAsync(userId, parsedDate);
-    var logsList = logs.ToList(); // Materializar para evitar múltiples enumeraciones
+    var logsList = logs.ToList(); // Materializar para evitar mï¿½ltiples enumeraciones
     var total = logsList.Sum(l => l.EstimatedCalories);
 
     return Results.Ok(new
@@ -294,7 +303,7 @@ nutritionGroup.MapGet("/history/{date}", async (string date, HttpContext context
 })
 .WithName("GetHistoryByDate");
 
-// Endpoint para obtener el total de calorías de un día específico
+// Endpoint para obtener el total de calorï¿½as de un dï¿½a especï¿½fico
 nutritionGroup.MapGet("/daily-total", async (string? date, HttpContext context, [FromServices] INutritionRepository repo) =>
 {
     var userId = GetUserIdFromClaims(context);
@@ -313,7 +322,7 @@ nutritionGroup.MapGet("/daily-total", async (string? date, HttpContext context, 
             System.Globalization.DateTimeStyles.None,
             out targetDate))
         {
-            return Results.BadRequest(new { Message = "Fecha inválida. Use el formato yyyy-MM-dd (ej: 2026-04-02)" });
+            return Results.BadRequest(new { Message = "Fecha invï¿½lida. Use el formato yyyy-MM-dd (ej: 2026-04-02)" });
         }
     }
 
@@ -332,20 +341,20 @@ nutritionGroup.MapGet("/weekly-summary", async (HttpContext context, [FromServic
 {
     var userId = GetUserIdFromClaims(context);
     
-    // Obtener los últimos 7 días
+    // Obtener los ï¿½ltimos 7 dï¿½as
     var endDate = DateTime.UtcNow.Date;
-    var startDate = endDate.AddDays(-6); // 7 días incluyendo hoy
+    var startDate = endDate.AddDays(-6); // 7 dï¿½as incluyendo hoy
     
     var stats = await repo.GetStatsInRangeAsync(userId, startDate, endDate);
     var statsList = stats.ToList();
     
-    // Obtener el objetivo calórico del usuario
+    // Obtener el objetivo calï¿½rico del usuario
     var user = await db.Users.FindAsync(userId);
     var dailyTarget = user?.DailyCaloricTarget ?? 0;
     
     // Calcular promedios y totales
     var totalCalories = statsList.Sum(s => (int)s.GetType().GetProperty("TotalCalories")!.GetValue(s)!);
-    var averageCalories = statsList.Any() ? totalCalories / 7 : 0; // Dividir por 7 días
+    var averageCalories = statsList.Any() ? totalCalories / 7 : 0; // Dividir por 7 dï¿½as
     
     return Results.Ok(new
     {
@@ -360,7 +369,7 @@ nutritionGroup.MapGet("/weekly-summary", async (HttpContext context, [FromServic
 })
 .WithName("GetWeeklySummary");
 
-// Endpoint para estadísticas de rango (Dashboard/Gráficos)
+// Endpoint para estadï¿½sticas de rango (Dashboard/Grï¿½ficos)
 nutritionGroup.MapGet("/stats", async (DateTime startDate, DateTime endDate, HttpContext context, [FromServices] INutritionRepository repo) =>
 {
     var userId = GetUserIdFromClaims(context);
@@ -372,6 +381,113 @@ nutritionGroup.MapGet("/stats", async (DateTime startDate, DateTime endDate, Htt
 
 
 
+// â”€â”€â”€ Endpoints de Actividad FÃ­sica â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+var activityGroup = app.MapGroup("/v1/activity")
+    .WithTags("Activity")
+    .RequireAuthorization();
+
+// POST /v1/activity/log â€” Registrar actividad y calcular calorÃ­as quemadas
+activityGroup.MapPost("/log", async (HttpContext context, LogActivityRequest request, LogActivityUseCase useCase, ILogger<Program> logger) =>
+{
+    try
+    {
+        var userIdClaim = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                          ?? context.User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
+            return Results.Unauthorized();
+
+        if (request.DurationMinutes <= 0)
+            return Results.BadRequest(new { Message = "La duraciÃ³n debe ser mayor a cero minutos." });
+
+        var command = new LogActivityCommand(userId, request.ActivityDescription, request.DurationMinutes);
+        var caloriesBurned = await useCase.ExecuteAsync(command);
+
+        return Results.Ok(new
+        {
+            CaloriesBurned = caloriesBurned,
+            Message = $"Actividad registrada: {caloriesBurned} kcal quemadas."
+        });
+    }
+    catch (ApplicationException ex) when (ex.Message.Contains("no disponible"))
+    {
+        logger.LogWarning(ex, "Servicio Gemini no disponible para actividad: {Activity}", request.ActivityDescription);
+        return Results.Json(
+            new { Message = "El servicio estÃ¡ tardando mÃ¡s de lo esperado. Por favor, intenta de nuevo." },
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error al registrar actividad: {Activity}", request.ActivityDescription);
+        return Results.Problem("Error interno al procesar la actividad. Por favor, intenta de nuevo.");
+    }
+})
+.WithName("LogActivity");
+
+// GET /v1/activity/history/{date} â€” Historial de actividades de un dÃ­a
+activityGroup.MapGet("/history/{date}", async (string date, HttpContext context, [FromServices] IActivityLogRepository repo) =>
+{
+    var userId = GetUserIdFromClaims(context);
+
+    if (!DateTime.TryParseExact(date, new[] { "yyyy-MM-dd", "dd-MM-yyyy", "MM-dd-yyyy" },
+        CultureInfo.InvariantCulture,
+        System.Globalization.DateTimeStyles.None,
+        out DateTime parsedDate))
+    {
+        return Results.BadRequest(new { Message = "Fecha invÃ¡lida. Use el formato yyyy-MM-dd (ej: 2026-04-16)" });
+    }
+
+    var logs = await repo.GetByUserAndDateAsync(userId, parsedDate);
+    var logsList = logs.ToList();
+    var totalBurned = logsList.Sum(l => l.CaloriesBurned);
+
+    return Results.Ok(new
+    {
+        Date = parsedDate.ToString("yyyy-MM-dd"),
+        Activities = logsList.Select(l => new
+        {
+            l.Id,
+            l.ActivityDescription,
+            l.DurationMinutes,
+            l.CaloriesBurned,
+            l.LoggedAt
+        }),
+        TotalCaloriesBurned = totalBurned
+    });
+})
+.WithName("GetActivityHistory");
+
+// GET /v1/activity/daily-burned?date=yyyy-MM-dd â€” Total quemado en el dÃ­a
+activityGroup.MapGet("/daily-burned", async (string? date, HttpContext context, [FromServices] IActivityLogRepository repo) =>
+{
+    var userId = GetUserIdFromClaims(context);
+
+    DateTime targetDate;
+    if (string.IsNullOrEmpty(date))
+    {
+        targetDate = DateTime.UtcNow.Date;
+    }
+    else
+    {
+        if (!DateTime.TryParseExact(date, new[] { "yyyy-MM-dd", "dd-MM-yyyy", "MM-dd-yyyy" },
+            CultureInfo.InvariantCulture,
+            System.Globalization.DateTimeStyles.None,
+            out targetDate))
+        {
+            return Results.BadRequest(new { Message = "Fecha invÃ¡lida. Use el formato yyyy-MM-dd" });
+        }
+    }
+
+    var totalBurned = await repo.GetTotalBurnedByUserAndDateAsync(userId, targetDate);
+
+    return Results.Ok(new
+    {
+        Date = targetDate.ToString("yyyy-MM-dd"),
+        TotalCaloriesBurned = totalBurned
+    });
+})
+.WithName("GetDailyBurned");
+
 // Helper local para extraer el Guid del usuario autenticado
 Guid GetUserIdFromClaims(HttpContext context)
 {
@@ -380,8 +496,8 @@ Guid GetUserIdFromClaims(HttpContext context)
 
     if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out Guid userId))
     {
-        // Lanzamos una excepción que nuestro GlobalExceptionHandler atrapará y convertirá en un 401/500 seguro
-        throw new UnauthorizedAccessException("Token inválido o ID de usuario no encontrado.");
+        // Lanzamos una excepciï¿½n que nuestro GlobalExceptionHandler atraparï¿½ y convertirï¿½ en un 401/500 seguro
+        throw new UnauthorizedAccessException("Token invï¿½lido o ID de usuario no encontrado.");
     }
 
     return userId;
@@ -389,7 +505,8 @@ Guid GetUserIdFromClaims(HttpContext context)
 
 app.Run();
 
-// DTO para la petición HTTP
+// DTO para la peticiï¿½n HTTP
 public record LogFoodRequest(string Text);
+public record LogActivityRequest(string ActivityDescription, int DurationMinutes);
 
 

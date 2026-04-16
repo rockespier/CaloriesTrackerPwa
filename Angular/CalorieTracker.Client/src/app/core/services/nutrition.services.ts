@@ -64,6 +64,32 @@ export interface DailyTotalResponse {
   totalCalories: number;
 }
 
+// ─── Actividad Física ────────────────────────────────────────────────────────
+
+export interface LogActivityResponse {
+  caloriesBurned: number;
+  message: string;
+}
+
+export interface ActivityLogEntry {
+  id: string;
+  activityDescription: string;
+  durationMinutes: number;
+  caloriesBurned: number;
+  loggedAt: Date;
+}
+
+export interface ActivityHistoryResponse {
+  date: string;
+  activities: ActivityLogEntry[];
+  totalCaloriesBurned: number;
+}
+
+export interface DailyBurnedResponse {
+  date: string;
+  totalCaloriesBurned: number;
+}
+
 export interface WeeklySummaryResponse {
   startDate: string;
   endDate: string;
@@ -81,6 +107,7 @@ export class NutritionService {
   private readonly http = inject(HttpClient);
   private readonly apiUrlNutrition = API_ENDPOINTS.nutrition;
   private readonly apiUrlUsers = API_ENDPOINTS.users;
+  private readonly apiUrlActivity = API_ENDPOINTS.activity;
 
   public logFood(text: string): Observable<LogFoodResponse> {
     return this.http.post<LogFoodResponse>(`${this.apiUrlNutrition}/log`, { text });
@@ -108,10 +135,36 @@ export class NutritionService {
   }
 
   /**
-   * Envía los nuevos datos al servidor, actualiza el histórico 
+   * Envía los nuevos datos al servidor, actualiza el histórico
    * y retorna la nueva meta calórica calculada.
    */
   public updateProfile(profile: UpdateUserProfileCommand): Observable<UpdateProfileResponse> {
     return this.http.put<UpdateProfileResponse>(`${this.apiUrlUsers}/profile`, profile);
+  }
+
+  // ─── Actividad Física ──────────────────────────────────────────────────────
+
+  /**
+   * Registra una actividad física y retorna las calorías quemadas (via Gemini).
+   */
+  public logActivity(activityDescription: string, durationMinutes: number): Observable<LogActivityResponse> {
+    return this.http.post<LogActivityResponse>(`${this.apiUrlActivity}/log`, {
+      activityDescription,
+      durationMinutes
+    });
+  }
+
+  /**
+   * Obtiene el historial de actividades físicas de un día específico.
+   */
+  public getActivityHistory(date: string): Observable<ActivityHistoryResponse> {
+    return this.http.get<ActivityHistoryResponse>(`${this.apiUrlActivity}/history/${date}`);
+  }
+
+  /**
+   * Obtiene el total de calorías quemadas en un día específico.
+   */
+  public getDailyBurned(date: string): Observable<DailyBurnedResponse> {
+    return this.http.get<DailyBurnedResponse>(`${this.apiUrlActivity}/daily-burned?date=${date}`);
   }
 }

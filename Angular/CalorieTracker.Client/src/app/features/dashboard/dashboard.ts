@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
-import { NutritionService, FoodLogEntry, NutritionStatsResponse, WeeklyStatusResponse, WeeklySummaryResponse } from '../../core/services/nutrition.services';
+import { NutritionService, FoodLogEntry, NutritionStatsResponse, WeeklyStatusResponse, WeeklySummaryResponse, ActivityLogEntry } from '../../core/services/nutrition.services';
 import { Router, RouterLink } from '@angular/router';
 
 interface ChartPoint {
@@ -34,9 +34,17 @@ export class DashboardComponent implements OnInit {
   isListening = signal<boolean>(false);
   isProcessing = signal<boolean>(false);
   
-  // Señales de historial y estado
+  // Señales de historial y estado — comida
   foodLogs = signal<FoodLogEntry[]>([]);
   errorMessage = signal<string>('');
+
+  // Señales de actividad física
+  activityInputText = signal<string>('');
+  activityDurationMinutes = signal<number | null>(null);
+  isProcessingActivity = signal<boolean>(false);
+  activityErrorMessage = signal<string>('');
+  activityLogs = signal<ActivityLogEntry[]>([]);
+  caloriesBurned = signal<number>(0);
 
   weeklyStatus = signal<WeeklyStatusResponse | null>(null);
   isLoadingWeekly = signal<boolean>(false);
@@ -120,6 +128,9 @@ export class DashboardComponent implements OnInit {
 
     // 3. Cargar stats para el grafico de 7 dias.
     this.loadRangeStats();
+
+    // 4. Cargar calorías quemadas de hoy.
+    this.loadTodayBurned();
   }
 
   loadWeeklySummary() {
@@ -343,13 +354,17 @@ export class DashboardComponent implements OnInit {
     this.hoveredPoint.set(null);
   }
 
- 
+  // Calorías netas = consumidas − quemadas
+  get netCalories(): number {
+    return Math.max(0, this.caloriesConsumed() - this.caloriesBurned());
+  }
+
   get caloriesRemaining(): number {
-    return Math.max(0, this.dailyCaloricTarget() - this.caloriesConsumed());
+    return Math.max(0, this.dailyCaloricTarget() - this.netCalories);
   }
 
   get progressPercentage(): number {
-    const percentage = (this.caloriesConsumed() / this.dailyCaloricTarget()) * 100;
+    const percentage = (this.netCalories / this.dailyCaloricTarget()) * 100;
     return Math.min(percentage, 100);
   }
 
@@ -427,6 +442,64 @@ export class DashboardComponent implements OnInit {
         const backendDetail = err?.error?.detail || err?.error?.message || err?.message;
         this.errorMessage.set(backendDetail || 'No pudimos procesar este alimento. Intenta de nuevo.');
         this.isProcessing.set(false);
+      }
+    });
+  }
+
+  // ─── Actividad Física ──────────────────────────────────────────────────────
+
+  private loadTodayBurned(): void {
+    const date = this.formatDate(new Date());
+    this.nutritionService.getDailyBurned(date).subscribe({
+      next: (res) => {
+        const total = Number((res as any)?.totalCaloriesBurned ?? (res as any)?.TotalCaloriesBurned ?? 0);
+        this.caloriesBurned.set(total);
+      },
+      error: (err) => {
+        console.error('Error cargando calorías quemadas', err);
+      }
+    });
+  }
+
+  processActivityEntry(): void {
+    const activity = this.activityInputText().trim();
+    const minutes = this.activityDurationMinutes();
+
+    if (!activity) {
+      this.activityErrorMessage.set('Describe la actividad realizada.');
+      return;
+    }
+    if (!minutes || minutes <= 0) {
+      this.activityErrorMessage.set('Ingresa una duración válida en minutos.');
+      return;
+    }
+
+    this.isProcessingActivity.set(true);
+    this.activityErrorMessage.set('');
+
+    this.nutritionService.logActivity(activity, minutes).subscribe({
+      next: (response) => {
+        const burned = Number((response as any)?.caloriesBurned ?? (response as any)?.CaloriesBurned ?? 0);
+
+        this.caloriesBurned.update(b => b + burned);
+
+        this.activityLogs.update(logs => [{
+          id: crypto.randomUUID(),
+          activityDescription: activity,
+          durationMinutes: minutes,
+          caloriesBurned: burned,
+          loggedAt: new Date()
+        }, ...logs]);
+
+        this.activityInputText.set('');
+        this.activityDurationMinutes.set(null);
+        this.isProcessingActivity.set(false);
+      },
+      error: (err) => {
+        console.error('Error al registrar actividad', err);
+        const detail = err?.error?.message || err?.error?.Message || 'No pudimos procesar la actividad. Intenta de nuevo.';
+        this.activityErrorMessage.set(detail);
+        this.isProcessingActivity.set(false);
       }
     });
   }
