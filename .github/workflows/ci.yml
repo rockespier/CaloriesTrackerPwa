@@ -46,7 +46,7 @@ jobs:
         --no-build
 
     # Empaqueta el resultado en un zip para subirlo como artefacto
-    - name: Zip backend (PowerShell)
+    - name: Zip backend (PowerShell 7)
       shell: pwsh
       run: |
         Compress-Archive -Path "./publish/backend/*" -DestinationPath "backend.zip" -Force
@@ -84,7 +84,7 @@ jobs:
       working-directory: ./Angular/CalorieTracker.Client
       run: npm run build -- --configuration=production
 
-    # Empaqueta el directorio dist/ en un zip para subirlo como artefacto
+    # Empaqueta el directorio dist/ en un zip para subirlo como artefacto con poweshell 7
     - name: Zip Frontend Artifact
       shell: pwsh
       working-directory: ./Angular/CalorieTracker.Client
