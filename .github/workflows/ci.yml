@@ -46,8 +46,10 @@ jobs:
         --no-build
 
     # Empaqueta el resultado en un zip para subirlo como artefacto
-    - name: Zip Backend Artifact
-      run: zip -r backend.zip ./publish/backend
+    - name: Zip backend (PowerShell)
+      shell: pwsh
+      run: |
+        Compress-Archive -Path "./publish/backend/*" -DestinationPath "backend.zip" -Force
 
     - name: Upload Backend Artifact
       uses: actions/upload-artifact@v4
@@ -84,8 +86,10 @@ jobs:
 
     # Empaqueta el directorio dist/ en un zip para subirlo como artefacto
     - name: Zip Frontend Artifact
+      shell: pwsh
       working-directory: ./Angular/CalorieTracker.Client
-      run: zip -r ../../../frontend.zip dist/
+      run: |
+        Compress-Archive -Path "dist/*" -DestinationPath "../../../frontend.zip" -Force
 
     - name: Upload Frontend Artifact
       uses: actions/upload-artifact@v4
