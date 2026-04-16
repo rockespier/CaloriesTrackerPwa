@@ -22,11 +22,6 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Setup .NET 9
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
-
     - name: Restore Dependencies
       run: dotnet restore CalorieTracker.Api/CalorieTracker.Api.csproj
 
@@ -46,11 +41,11 @@ jobs:
         --no-build
 
     # Empaqueta el resultado en un zip para subirlo como artefacto
-    - name: Zip backend (PowerShell 7)
-      shell: pwsh
+    - name: Zip backend (Windows PowerShell)
+      shell: powershell
       run: |
-        Compress-Archive -Path "./publish/backend/*" -DestinationPath "backend.zip" -Force
-
+       Compress-Archive -Path ".\publish\backend\*" -DestinationPath "backend.zip" -Force
+    
     - name: Upload Backend Artifact
       uses: actions/upload-artifact@v4
       with:
@@ -85,11 +80,11 @@ jobs:
       run: npm run build -- --configuration=production
 
     # Empaqueta el directorio dist/ en un zip para subirlo como artefacto con poweshell 7
-    - name: Zip Frontend Artifact
-      shell: pwsh
+    - name: Zip Frontend Artifact (Windows PowerShell)
+      shell: powershell
       working-directory: ./Angular/CalorieTracker.Client
       run: |
-        Compress-Archive -Path "dist/*" -DestinationPath "../../../frontend.zip" -Force
+        Compress-Archive -Path ".\dist\*" -DestinationPath "..\..\..\frontend.zip" -Force
 
     - name: Upload Frontend Artifact
       uses: actions/upload-artifact@v4
