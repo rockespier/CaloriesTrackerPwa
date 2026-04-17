@@ -1,4 +1,5 @@
-﻿using CalorieTracker.Application.Interfaces;
+﻿using CalorieTracker.Application.DTOs;
+using CalorieTracker.Application.Interfaces;
 using CalorieTracker.Domain.Entities;
 using CalorieTracker.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -26,17 +27,14 @@ namespace CalorieTracker.Infrastructure.Repositories
                 .SumAsync(f => f.EstimatedCalories);
         }
 
-        public async Task<IEnumerable<object>> GetDailyHistoryAsync(Guid userId, int daysBack)
+        public async Task<IEnumerable<DailyCaloriesSummaryDto>> GetDailyHistoryAsync(Guid userId, int daysBack)
         {
             var startDate = DateTime.UtcNow.Date.AddDays(-daysBack);
 
             return await _context.FoodLogs
                 .Where(f => f.UserId == userId && f.LoggedAt >= startDate)
                 .GroupBy(f => f.LoggedAt.Date)
-                .Select(g => new {
-                    Date = g.Key,
-                    TotalCalories = g.Sum(f => f.EstimatedCalories)
-                })
+                .Select(g => new DailyCaloriesSummaryDto(g.Key, g.Sum(f => f.EstimatedCalories)))
                 .OrderByDescending(x => x.Date)
                 .ToListAsync();
         }

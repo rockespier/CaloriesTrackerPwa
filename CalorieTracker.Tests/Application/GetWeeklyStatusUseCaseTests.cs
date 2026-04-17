@@ -1,3 +1,4 @@
+using CalorieTracker.Application.DTOs;
 using CalorieTracker.Application.Interfaces;
 using CalorieTracker.Application.UseCases;
 using CalorieTracker.Domain.Entities;
@@ -23,19 +24,19 @@ public class GetWeeklyStatusUseCaseTests
         var user        = new User("test@test.com", "hash", "Juan", 180, 90, 80, 30, 'M', ActivityLevel.Sedentary);
         var dailyTarget = user.DailyCaloricTarget;
 
-        var dailyHistory = new List<object>
+        var dailyHistory = new List<DailyCaloriesSummaryDto>
         {
-            new { Date = DateTime.Today.AddDays(-1), TotalCalories = (int)(dailyTarget - 200) },
-            new { Date = DateTime.Today.AddDays(-2), TotalCalories = (int)(dailyTarget - 200) }
+            new(DateTime.Today.AddDays(-1), (int)(dailyTarget - 200)),
+            new(DateTime.Today.AddDays(-2), (int)(dailyTarget - 200))
         };
 
         _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
         _nutritionRepoMock.Setup(r => r.GetDailyHistoryAsync(userId, 7)).ReturnsAsync(dailyHistory);
 
-        dynamic result = await _useCase.ExecuteAsync(userId);
+        var result = await _useCase.ExecuteAsync(userId);
 
-        Assert.Equal("En Meta", (string)result.ComplianceStatus);
-        Assert.Equal(2, (int)result.DaysActive);
+        Assert.Equal("En Meta", result.ComplianceStatus);
+        Assert.Equal(2, result.DaysActive);
     }
 
     [Fact]
@@ -45,18 +46,18 @@ public class GetWeeklyStatusUseCaseTests
         var user        = new User("test@test.com", "hash", "Juan", 180, 90, 80, 30, 'M', ActivityLevel.Sedentary);
         var dailyTarget = user.DailyCaloricTarget;
 
-        var dailyHistory = new List<object>
+        var dailyHistory = new List<DailyCaloriesSummaryDto>
         {
-            new { Date = DateTime.Today.AddDays(-1), TotalCalories = dailyTarget + 300 },
-            new { Date = DateTime.Today.AddDays(-2), TotalCalories = dailyTarget + 300 }
+            new(DateTime.Today.AddDays(-1), dailyTarget + 300),
+            new(DateTime.Today.AddDays(-2), dailyTarget + 300)
         };
 
         _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync(user);
         _nutritionRepoMock.Setup(r => r.GetDailyHistoryAsync(userId, 7)).ReturnsAsync(dailyHistory);
 
-        dynamic result = await _useCase.ExecuteAsync(userId);
+        var result = await _useCase.ExecuteAsync(userId);
 
-        Assert.Equal("Exceso", (string)result.ComplianceStatus);
+        Assert.Equal("Exceso", result.ComplianceStatus);
     }
 
     [Fact]
@@ -64,8 +65,8 @@ public class GetWeeklyStatusUseCaseTests
     {
         var userId = Guid.NewGuid();
         _userRepoMock.Setup(r => r.GetByIdAsync(userId)).ReturnsAsync((User?)null);
-        _nutritionRepoMock.Setup(r => r.GetDailyHistoryAsync(userId, 7)).ReturnsAsync(new List<object>());
+        _nutritionRepoMock.Setup(r => r.GetDailyHistoryAsync(userId, 7)).ReturnsAsync(new List<DailyCaloriesSummaryDto>());
 
-        await Assert.ThrowsAnyAsync<Exception>(() => _useCase.ExecuteAsync(userId));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _useCase.ExecuteAsync(userId));
     }
 }
