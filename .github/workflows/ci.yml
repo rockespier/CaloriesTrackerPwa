@@ -78,17 +78,21 @@ jobs:
     - name: Build Angular PWA (Production)
       working-directory: ./Angular/CalorieTracker.Client
       run: npm run build -- --configuration=production
-
-    # Empaqueta el directorio dist/ en un zip para subirlo como artefacto con poweshell 7
+      
     - name: Zip Frontend Artifact (Windows PowerShell)
       shell: powershell
       working-directory: ./Angular/CalorieTracker.Client
       run: |
-        Compress-Archive -Path ".\dist\*" -DestinationPath "..\..\..\frontend.zip" -Force
-
+        $zip = Join-Path $env:GITHUB_WORKSPACE "frontend.zip"
+        if (Test-Path $zip) { Remove-Item $zip -Force }
+        Compress-Archive -Path ".\dist\*" -DestinationPath $zip -Force
+        Write-Host "Created: $zip"
+        Get-Item $zip      
+        
     - name: Upload Frontend Artifact
       uses: actions/upload-artifact@v4
       with:
         name: frontend-release
         path: frontend.zip
-        retention-days: 7
+        retention-days: 7        
+
