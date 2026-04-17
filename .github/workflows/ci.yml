@@ -14,18 +14,13 @@ jobs:
   # ==========================================
   build-backend:
     name: Build, Test & Publish .NET API
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
-
-    - name: Setup .NET 9
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '9.0.x'
 
     - name: Restore Dependencies
       run: dotnet restore CalorieTracker.Api/CalorieTracker.Api.csproj
@@ -46,9 +41,11 @@ jobs:
         --no-build
 
     # Empaqueta el resultado en un zip para subirlo como artefacto
-    - name: Zip Backend Artifact
-      run: zip -r backend.zip ./publish/backend
-
+    - name: Zip backend (Windows PowerShell)
+      shell: powershell
+      run: |
+       Compress-Archive -Path ".\publish\backend\*" -DestinationPath "backend.zip" -Force
+    
     - name: Upload Backend Artifact
       uses: actions/upload-artifact@v4
       with:
@@ -61,7 +58,7 @@ jobs:
   # ==========================================
   build-frontend:
     name: Build & Package Angular Client
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
 
@@ -81,15 +78,21 @@ jobs:
     - name: Build Angular PWA (Production)
       working-directory: ./Angular/CalorieTracker.Client
       run: npm run build -- --configuration=production
-
-    # Empaqueta el directorio dist/ en un zip para subirlo como artefacto
-    - name: Zip Frontend Artifact
+      
+    - name: Zip Frontend Artifact (Windows PowerShell)
+      shell: powershell
       working-directory: ./Angular/CalorieTracker.Client
-      run: zip -r ../../../frontend.zip dist/
-
+      run: |
+        $zip = Join-Path $env:GITHUB_WORKSPACE "frontend.zip"
+        if (Test-Path $zip) { Remove-Item $zip -Force }
+        Compress-Archive -Path ".\dist\calorie-tracker.client\browser\*" -DestinationPath $zip -Force
+        Write-Host "Created: $zip"
+        Get-Item $zip      
+        
     - name: Upload Frontend Artifact
       uses: actions/upload-artifact@v4
       with:
         name: frontend-release
         path: frontend.zip
-        retention-days: 7
+        retention-days: 7        
+

@@ -31,30 +31,7 @@ on:
       ci_run_id:
         description: 'ID del workflow run de CI del que descargar los artefactos (ver pestaña Actions → CI pipeline → Run ID en la URL)'
         required: true
-        type: string
-      backend_target_path:
-        description: 'Ruta destino del backend en el servidor (ej. C:\inetpub\CalorieTrackerApi)'
-        required: true
-        type: string
-      frontend_target_path:
-        description: 'Ruta destino del frontend en el servidor (ej. C:\inetpub\wwwroot\calorietracker)'
-        required: true
-        type: string
-      restart_iis:
-        description: '¿Reiniciar el sitio y app pool de IIS tras el despliegue?'
-        required: false
-        type: boolean
-        default: false
-      iis_site_name:
-        description: 'Nombre del sitio IIS a detener/iniciar (requerido si restart_iis = true)'
-        required: false
-        type: string
-        default: ''
-      iis_app_pool_name:
-        description: 'Nombre del Application Pool de IIS a reciclar (requerido si restart_iis = true)'
-        required: false
-        type: string
-        default: ''
+        type: string      
 
 jobs:
   deploy:
@@ -90,8 +67,7 @@ jobs:
     # ----------------------------------------------------------
     # 2. Desplegar Backend
     # ----------------------------------------------------------
-    - name: Stop IIS Site before backend deploy (optional)
-      if: ${{ inputs.restart_iis && inputs.iis_site_name != '' }}
+    - name: Stop IIS Site before backend deploy (optional)      
       shell: powershell
       run: |
         # Detiene el sitio IIS para liberar los archivos antes de copiarlos.
@@ -104,7 +80,7 @@ jobs:
           Write-Error "No se pudo cargar el módulo WebAdministration. Verifica que las herramientas de administración de IIS estén instaladas."
           exit 1
         }
-        $site = "${{ inputs.iis_site_name }}"
+        $site = "${{ secrets.IIS_SITE_NAME }}"
         if ((Get-WebsiteState -Name $site).Value -eq 'Started') {
           Stop-Website -Name $site
           Write-Host "Sitio '$site' detenido."
@@ -116,7 +92,12 @@ jobs:
       shell: powershell
       run: |
         $backendZip  = "${{ runner.temp }}\artifacts\backend\backend.zip"
-        $targetPath  = "${{ inputs.backend_target_path }}"
+        $targetPath  = "${{ secrets.BACKEND_TARGET_PATH }}"
+        
+        if (-not (Test-Path $backendZip)) {
+           Write-Error "No se encontró el artifact esperado: $backendZip"
+            exit 1
+        }
 
         # Crear carpeta destino si no existe
         if (-not (Test-Path $targetPath)) {
@@ -136,7 +117,7 @@ jobs:
       shell: powershell
       run: |
         $frontendZip = "${{ runner.temp }}\artifacts\frontend\frontend.zip"
-        $targetPath  = "${{ inputs.frontend_target_path }}"
+        $targetPath  = "${{ secrets.FRONTEND_TARGET_PATH }}"
 
         # Crear carpeta destino si no existe
         if (-not (Test-Path $targetPath)) {
@@ -152,8 +133,7 @@ jobs:
     # ----------------------------------------------------------
     # 4. Reiniciar IIS (opcional, solo si restart_iis = true)
     # ----------------------------------------------------------
-    - name: Recycle IIS Application Pool
-      if: ${{ inputs.restart_iis && inputs.iis_app_pool_name != '' }}
+    - name: Recycle IIS Application Pool      
       shell: powershell
       run: |
         # Recicla el Application Pool para que IIS cargue los nuevos binarios.
@@ -163,13 +143,12 @@ jobs:
           Write-Error "No se pudo cargar el módulo WebAdministration. Verifica que las herramientas de administración de IIS estén instaladas."
           exit 1
         }
-        $pool = "${{ inputs.iis_app_pool_name }}"
+        $pool = "${{ secrets.IIS_APP_POOL_NAME }}"
         Write-Host "Reciclando Application Pool: $pool"
         Restart-WebAppPool -Name $pool
         Write-Host "Application Pool '$pool' reciclado."
 
-    - name: Start IIS Site after deploy
-      if: ${{ inputs.restart_iis && inputs.iis_site_name != '' }}
+    - name: Start IIS Site after deploy      
       shell: powershell
       run: |
         try {
@@ -178,7 +157,7 @@ jobs:
           Write-Error "No se pudo cargar el módulo WebAdministration. Verifica que las herramientas de administración de IIS estén instaladas."
           exit 1
         }
-        $site = "${{ inputs.iis_site_name }}"
+        $site = "${{ secrets.IIS_SITE_NAME }}"
         Start-Website -Name $site
         Write-Host "Sitio '$site' iniciado."
 
@@ -192,10 +171,8 @@ jobs:
         Write-Host " CalorieTracker - Despliegue completado"
         Write-Host "============================================"
         Write-Host " CI Run ID: ${{ inputs.ci_run_id }}"
-        Write-Host " Backend  → ${{ inputs.backend_target_path }}"
-        Write-Host " Frontend → ${{ inputs.frontend_target_path }}"
-        if ('${{ inputs.restart_iis }}' -eq 'true') {
-          Write-Host " IIS Site : ${{ inputs.iis_site_name }}"
-          Write-Host " App Pool : ${{ inputs.iis_app_pool_name }}"
-        }
+        Write-Host " Backend  → ${{ secrets.BACKEND_TARGET_PATH }}"
+        Write-Host " Frontend → ${{ secrets.FRONTEND_TARGET_PATH }}"
+        Write-Host " IIS Site : ${{ secrets.IIS_SITE_NAME }}"
+        Write-Host " App Pool : ${{ secrets.IIS_APP_POOL_NAME }}"        
         Write-Host "============================================"
