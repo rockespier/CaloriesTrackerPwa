@@ -14,4 +14,25 @@ public record RegisterUserCommand(
     string Password,
 
     [property: Required]
-    [property: StringLength(100, MinimumLength = 2
+    [property: StringLength(100, MinimumLength = 2)]
+    string Name,
+
+    [property: Range(50, 300)]
+    double HeightCm,
+
+    [property: Range(20, 500)]
+    double CurrentWeightKg,
+
+    [property: Range(20, 500)]
+    double TargetWeightKg,
+
+    [property: Range(1, 120)]
+    int Age,
+
+    [property: RegularExpression("^[MFO]$", ErrorMessage = "BiologicalSex debe ser 'M', 'F' u 'O'.")]
+    char BiologicalSex,
+
+    ActivityLevel ActivityLevel,
+
+    string Goal = "Mantener"
+);

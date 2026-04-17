@@ -1,6 +1,8 @@
 using Azure.Extensions.AspNetCore.Configuration.Secrets;
 using Azure.Identity;
 using Azure.Security.KeyVault.Secrets;
+using CalorieTracker.Api.Filters;
+using CalorieTracker.Api.Middleware;
 using CalorieTracker.Application.Commands;
 using CalorieTracker.Application.Interfaces;
 using CalorieTracker.Application.Services;
@@ -10,18 +12,16 @@ using CalorieTracker.Infrastructure.Auth;
 using CalorieTracker.Infrastructure.Data;
 using CalorieTracker.Infrastructure.Repositories;
 using CalorieTracker.Infrastructure.Services;
-using System.Globalization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.OpenApi;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
-using System;
+using Microsoft.OpenApi.Models;
+using Scalar.AspNetCore;
+using System.Globalization;
 using System.Security.Claims;
 using System.Text;
 
@@ -38,6 +38,27 @@ builder.Services.AddCors(options =>
               .AllowCredentials();
     });
 });
+
+// OpenAPI / Scalar UI
+builder.Services.AddOpenApi("v1", options =>
+{
+    options.AddDocumentTransformer((document, context, cancellationToken) =>
+    {
+        document.Info = new OpenApiInfo
+        {
+            Title       = "CalorieTracker API",
+            Version     = "v1",
+            Description = "API para seguimiento de calorías con análisis nutricional mediante IA (Gemini).",
+            Contact     = new OpenApiContact { Name = "CalorieTracker Team" }
+        };
+        return Task.CompletedTask;
+    });
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+});
+
+// Manejador global de excepciones (ASP.NET Core 9 nativo)
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 // Configurare Azure Key Vault (solo in produzione o quando configurato)
 if (!string.IsNullOrEmpty(builder.Configuration["Azure:KeyVault:Uri"]))
@@ -95,7 +116,14 @@ builder.Services.AddHttpClient<IActivityAnalyzer, GeminiActivityAnalyzer>(client
 builder.Services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
 builder.Services.AddScoped<LogActivityUseCase>();
 
-// 4. Configurar Autenticaci�n JWT nativa
+// Validación de seguridad: el secreto JWT debe venir de variables de entorno o Key Vault — nunca de appsettings.json
+var jwtSecret = builder.Configuration["JwtSettings:Secret"];
+if (string.IsNullOrWhiteSpace(jwtSecret) || jwtSecret.Length < 32)
+    throw new InvalidOperationException(
+        "JwtSettings:Secret no está configurado o es demasiado corto (mínimo 32 caracteres). " +
+        "Configúralo mediante dotnet user-secrets, variables de entorno o Azure Key Vault.");
+
+// 4. Configurar Autenticación JWT nativa
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -116,14 +144,25 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-// 3. Activar Middleware CORS (deve essere prima di UseAuthentication)
+// Middleware de excepciones globales — debe ser el primero del pipeline
+app.UseExceptionHandler();
+
+// OpenAPI / Scalar UI (solo en entornos no productivos)
+if (!app.Environment.IsProduction())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference(opts =>
+    {
+        opts.Title = "CalorieTracker API";
+        opts.Theme = ScalarTheme.Default;
+    });
+}
+
+// CORS antes de autenticación
 app.UseCors("AllowPwa");
 
-// 3. Activar Middleware
 app.UseAuthentication();
 app.UseAuthorization();
-
-// Dopo app.UseAuthorization(); e prima dei gruppi di endpoint
 
 app.MapGet("/", () => Results.Ok(new
 {
@@ -185,51 +224,29 @@ var usersGroup = app.MapGroup("/v1/users").WithTags("Users");
 
 usersGroup.MapPost("/register", async (RegisterUserCommand command, RegisterUserUseCase useCase) =>
 {
-    try
-    {
-        // En un entorno real de .NET 9, aqu� usar�amos Endpoint Filters para validar el Command
-        // antes de que llegue al Use Case (Ej: DataAnnotations nativos).
-
-        var userId = await useCase.ExecuteAsync(command);
-
-        // Retornamos 201 Created cumpliendo con los est�ndares REST
-        return Results.Created($"/v1/users/{userId}", new { Id = userId });
-    }
-    catch (InvalidOperationException ex)
-    {
-        // 409 Conflict es el c�digo HTTP sem�nticamente correcto cuando un recurso (email) ya existe.
-        return Results.Conflict(new { Message = ex.Message });
-    }
-    catch (Exception)
-    {
-        // 500 Internal Server Error protegido (sin exponer el stack trace al cliente)
-        return Results.Problem("Ha ocurrido un error inesperado al procesar el registro.");
-    }
+    var userId = await useCase.ExecuteAsync(command);
+    return Results.Created($"/v1/users/{userId}", new { Id = userId });
 })
 .WithName("RegisterUser")
+.WithSummary("Registrar nuevo usuario")
+.WithDescription("Crea una nueva cuenta de usuario con perfil y calcula el objetivo calórico diario.")
+.AddEndpointFilter<ValidationFilter<RegisterUserCommand>>()
 .Produces(StatusCodes.Status201Created)
+.Produces(StatusCodes.Status400BadRequest)
 .Produces(StatusCodes.Status409Conflict)
 .Produces(StatusCodes.Status500InternalServerError);
 
 usersGroup.MapPost("/login", async (LoginCommand command, LoginUseCase useCase) =>
 {
-    try
-    {
-        var token = await useCase.ExecuteAsync(command);
-        return Results.Ok(new { Token = token });
-    }
-    catch (UnauthorizedAccessException)
-    {
-        // 401 Unauthorized para credenciales inv�lidas. Nunca confirmar si el error fue el correo o la contrase�a por seguridad.
-        return Results.Unauthorized();
-    }
-    catch (Exception)
-    {
-        return Results.Problem("Ha ocurrido un error inesperado durante la autenticaci�n.");
-    }
+    var token = await useCase.ExecuteAsync(command);
+    return Results.Ok(new { Token = token });
 })
 .WithName("LoginUser")
+.WithSummary("Iniciar sesión")
+.WithDescription("Autentica al usuario y devuelve un JWT Bearer válido.")
+.AddEndpointFilter<ValidationFilter<LoginCommand>>()
 .Produces(StatusCodes.Status200OK)
+.Produces(StatusCodes.Status400BadRequest)
 .Produces(StatusCodes.Status401Unauthorized)
 .Produces(StatusCodes.Status500InternalServerError);
 
@@ -505,8 +522,41 @@ Guid GetUserIdFromClaims(HttpContext context)
 
 app.Run();
 
-// DTO para la petici�n HTTP
+// DTOs para las peticiones HTTP
 public record LogFoodRequest(string Text);
 public record LogActivityRequest(string ActivityDescription, int DurationMinutes);
+
+/// <summary>
+/// Transformer de OpenAPI que añade el esquema de seguridad JWT Bearer al documento generado.
+/// Permite autenticar peticiones directamente desde la UI de Scalar.
+/// </summary>
+internal sealed class BearerSecuritySchemeTransformer(
+    IAuthenticationSchemeProvider authenticationSchemeProvider) : IOpenApiDocumentTransformer
+{
+    public async Task TransformAsync(
+        OpenApiDocument document,
+        OpenApiDocumentTransformerContext context,
+        CancellationToken cancellationToken)
+    {
+        var schemes = await authenticationSchemeProvider.GetAllSchemesAsync();
+        if (!schemes.Any(s => s.Name == JwtBearerDefaults.AuthenticationScheme))
+            return;
+
+        var securitySchemes = new Dictionary<string, OpenApiSecurityScheme>
+        {
+            [JwtBearerDefaults.AuthenticationScheme] = new OpenApiSecurityScheme
+            {
+                Type         = SecuritySchemeType.Http,
+                Scheme       = JwtBearerDefaults.AuthenticationScheme,
+                In           = ParameterLocation.Header,
+                BearerFormat = "JWT",
+                Description  = "JWT obtenido desde POST /v1/users/login. Ejemplo: eyJhbGci..."
+            }
+        };
+
+        document.Components           ??= new OpenApiComponents();
+        document.Components.SecuritySchemes = securitySchemes;
+    }
+}
 
 

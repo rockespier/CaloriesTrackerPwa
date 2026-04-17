@@ -28,4 +28,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CalorieTracker.Application\CalorieTracker.Application.csproj" />
     <ProjectReference Include="..\CalorieTracker.Domain\CalorieTracker.Domain.csproj" />
-    <ProjectReference Include="..\CalorieTracker.Infrastructure\Ca
+    <ProjectReference Include="..\CalorieTracker.Infrastructure\CalorieTracker.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

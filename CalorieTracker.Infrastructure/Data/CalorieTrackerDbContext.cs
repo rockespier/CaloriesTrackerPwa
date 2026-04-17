@@ -36,6 +36,20 @@ namespace CalorieTracker.Infrastructure.Data
                 entity.Property(e => e.CaloriesBurned).IsRequired();
                 entity.Property(e => e.LoggedAt).IsRequired();
             });
+
+            // Índice compuesto para consultas por usuario y fecha en FoodLogs (mejora rendimiento)
+            modelBuilder.Entity<FoodLog>(entity =>
+            {
+                entity.HasIndex(e => new { e.UserId, e.LoggedAt })
+                      .HasDatabaseName("IX_FoodLogs_UserId_LoggedAt");
+            });
+
+            // Índice compuesto para consultas por usuario y fecha en UserProfileHistory (mejora rendimiento)
+            modelBuilder.Entity<UserProfileHistory>(entity =>
+            {
+                entity.HasIndex(e => new { e.UserId, e.RecordedAt })
+                      .HasDatabaseName("IX_UserProfileHistory_UserId_RecordedAt");
+            });
         }
     }
 }
