@@ -17,6 +17,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OpenApi;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -24,6 +25,7 @@ using Scalar.AspNetCore;
 using System.Globalization;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -142,6 +144,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("auth", config =>
+    {
+        config.PermitLimit = 5;
+        config.Window = TimeSpan.FromMinutes(15);
+        config.QueueLimit = 0;
+        config.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
+
 var app = builder.Build();
 
 // Middleware de excepciones globales — debe ser el primero del pipeline
@@ -160,6 +174,8 @@ if (!app.Environment.IsProduction())
 
 // CORS antes de autenticación
 app.UseCors("AllowPwa");
+
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
@@ -231,9 +247,11 @@ usersGroup.MapPost("/register", async (RegisterUserCommand command, RegisterUser
 .WithSummary("Registrar nuevo usuario")
 .WithDescription("Crea una nueva cuenta de usuario con perfil y calcula el objetivo calórico diario.")
 .AddEndpointFilter<ValidationFilter<RegisterUserCommand>>()
+.RequireRateLimiting("auth")
 .Produces(StatusCodes.Status201Created)
 .Produces(StatusCodes.Status400BadRequest)
 .Produces(StatusCodes.Status409Conflict)
+.Produces(StatusCodes.Status429TooManyRequests)
 .Produces(StatusCodes.Status500InternalServerError);
 
 usersGroup.MapPost("/login", async (LoginCommand command, LoginUseCase useCase) =>
@@ -245,9 +263,11 @@ usersGroup.MapPost("/login", async (LoginCommand command, LoginUseCase useCase) 
 .WithSummary("Iniciar sesión")
 .WithDescription("Autentica al usuario y devuelve un JWT Bearer válido.")
 .AddEndpointFilter<ValidationFilter<LoginCommand>>()
+.RequireRateLimiting("auth")
 .Produces(StatusCodes.Status200OK)
 .Produces(StatusCodes.Status400BadRequest)
 .Produces(StatusCodes.Status401Unauthorized)
+.Produces(StatusCodes.Status429TooManyRequests)
 .Produces(StatusCodes.Status500InternalServerError);
 
 // Endpoint: GET /api/v1/users/profile
