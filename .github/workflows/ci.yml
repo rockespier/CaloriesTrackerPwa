@@ -4,9 +4,7 @@ name: CalorieTracker CI Pipeline
 # para ser consumidos por el workflow deploy.yml.
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ "main" ]  
 
 jobs:
   # ==========================================
