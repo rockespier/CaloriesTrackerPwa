@@ -364,13 +364,13 @@ nutritionGroup.MapGet("/weekly-summary", async (HttpContext context, [FromServic
     
     var stats = await repo.GetStatsInRangeAsync(userId, startDate, endDate);
     var statsList = stats.ToList();
-    
+
     // Obtener el objetivo cal�rico del usuario
     var user = await db.Users.FindAsync(userId);
     var dailyTarget = user?.DailyCaloricTarget ?? 0;
-    
+
     // Calcular promedios y totales
-    var totalCalories = statsList.Sum(s => (int)s.GetType().GetProperty("TotalCalories")!.GetValue(s)!);
+    var totalCalories = statsList.Sum(s => s.TotalCalories);
     var averageCalories = statsList.Any() ? totalCalories / 7 : 0; // Dividir por 7 d�as
     
     return Results.Ok(new

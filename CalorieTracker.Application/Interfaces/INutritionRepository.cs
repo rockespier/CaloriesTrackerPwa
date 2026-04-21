@@ -12,6 +12,6 @@ namespace CalorieTracker.Application.Interfaces
         Task<int> GetTotalCaloriesForDateAsync(Guid userId, DateTime date);
         Task<IEnumerable<DailyCaloriesSummaryDto>> GetDailyHistoryAsync(Guid userId, int daysBack);
         Task<IEnumerable<FoodLog>> GetLogsByDateAsync(Guid userId, DateTime date);
-        Task<IEnumerable<object>> GetStatsInRangeAsync(Guid userId, DateTime startDate, DateTime endDate);
+        Task<IEnumerable<NutritionStatDto>> GetStatsInRangeAsync(Guid userId, DateTime startDate, DateTime endDate);
     }
 }
