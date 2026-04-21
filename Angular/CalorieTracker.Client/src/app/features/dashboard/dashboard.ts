@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { NutritionService, FoodLogEntry, NutritionStatsResponse, WeeklyStatusResponse, WeeklySummaryResponse, ActivityLogEntry } from '../../core/services/nutrition.services';
 import { Router, RouterLink } from '@angular/router';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 
 interface ChartPoint {
   date: string;
@@ -157,33 +159,32 @@ export class DashboardComponent implements OnInit {
     const localDate = this.formatDate(now);
     const utcDate = now.toISOString().split('T')[0];
 
-    this.nutritionService.getDailyTotal(localDate).subscribe({
-      next: (dailyTotal) => {
-        const localTotal = this.parseTotalCalories(dailyTotal);
-        this.resolveTodayCaloriesWithFallback(localDate, utcDate, localTotal);
-      },
-      error: (err) => {
-        console.error('Error cargando total diario', err);
-        this.resolveTodayCaloriesWithFallback(localDate, utcDate, 0);
-      }
-    });
-  }
-
-  private resolveTodayCaloriesWithFallback(localDate: string, utcDate: string, localTotal: number): void {
-    if (utcDate !== localDate) {
-      this.nutritionService.getDailyTotal(utcDate).subscribe({
-        next: (utcDailyTotal) => {
-          const utcTotal = this.parseTotalCalories(utcDailyTotal);
-          this.caloriesConsumed.set(Math.max(localTotal, utcTotal));
-        },
-        error: () => {
-          this.caloriesConsumed.set(localTotal);
+    if (localDate === utcDate) {
+      this.nutritionService.getDailyTotal(localDate).subscribe({
+        next: (res) => this.caloriesConsumed.set(this.parseTotalCalories(res)),
+        error: (err) => {
+          console.error('Error cargando total diario', err);
+          this.caloriesConsumed.set(0);
         }
       });
       return;
     }
 
-    this.caloriesConsumed.set(localTotal);
+    // Fechas distintas (zona horaria ≠ UTC): ambas peticiones en paralelo
+    forkJoin([
+      this.nutritionService.getDailyTotal(localDate).pipe(catchError(() => of(null))),
+      this.nutritionService.getDailyTotal(utcDate).pipe(catchError(() => of(null)))
+    ]).subscribe({
+      next: ([localRes, utcRes]) => {
+        const local = localRes ? this.parseTotalCalories(localRes) : 0;
+        const utc = utcRes ? this.parseTotalCalories(utcRes) : 0;
+        this.caloriesConsumed.set(Math.max(local, utc));
+      },
+      error: (err) => {
+        console.error('Error cargando total diario', err);
+        this.caloriesConsumed.set(0);
+      }
+    });
   }
 
   loadRangeStats() {

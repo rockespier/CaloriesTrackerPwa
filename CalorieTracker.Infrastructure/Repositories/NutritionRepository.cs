@@ -47,19 +47,14 @@ namespace CalorieTracker.Infrastructure.Repositories
                 .OrderByDescending(f => f.LoggedAt)
                 .ToListAsync();
         }
-        public async Task<IEnumerable<object>> GetStatsInRangeAsync(Guid userId, DateTime startDate, DateTime endDate)
+        public async Task<IEnumerable<NutritionStatDto>> GetStatsInRangeAsync(Guid userId, DateTime startDate, DateTime endDate)
         {
             return await _context.FoodLogs
                 .Where(f => f.UserId == userId
                     && f.LoggedAt.Date >= startDate.Date
                     && f.LoggedAt.Date <= endDate.Date)
                 .GroupBy(f => f.LoggedAt.Date)
-                .Select(g => new
-                {
-                    Date = g.Key,
-                    TotalCalories = g.Sum(f => f.EstimatedCalories),
-                    MealCount = g.Count()
-                })
+                .Select(g => new NutritionStatDto(g.Key, g.Sum(f => f.EstimatedCalories), g.Count()))
                 .OrderBy(x => x.Date)
                 .ToListAsync();
         }
