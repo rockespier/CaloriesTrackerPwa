@@ -2,7 +2,7 @@ name: 💡 Copilot Issue Suggester
 
 on:
   schedule:
-    - cron: "0 9 * * 1" # Monday 9:00 UTC
+    - cron: "0 9 2 * *" #  9:00 UTC el 2 de cada mes
   workflow_dispatch:
     inputs:
       suggestion_type:
